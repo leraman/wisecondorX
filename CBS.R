@@ -1,0 +1,84 @@
+# -----
+# arg
+# -----
+
+arguments = "
+
+--infile          - (mandatory argument) input .json file
+--sexchroms       - (mandatory argument) which sex chromosomes will be analyzed? (X or XY)
+--outfile         - (mandatory argument) output .json file
+
+"
+
+args <- commandArgs(TRUE)
+
+
+if (all(c(args[1], args[3]) %in% c("--infile", "--sexchroms", "--outfile"))){
+  in.file <- paste0(args[which(args == "--infile")+1])
+  sex.chrom <- paste0(args[which(args == "--sexchroms")+1])
+  out.file <- paste0(args[which(args == "--outfile")+1])
+}
+
+# -----
+# param
+# -----
+
+if (sex.chrom == "X"){
+    exclude.chr = c(24)
+} else {
+    exclude.chr = c()
+}
+
+# -----
+# lib
+# -----
+
+suppressMessages(library("DNAcopy"))
+suppressMessages(library("jsonlite"))
+
+# -----
+# main
+# -----
+
+# process data
+
+input <- read_json(in.file)
+var <- as.numeric(unlist(input$results_r))
+
+chrs = c(1:24)
+chrs = chrs[which(!(chrs  %in% exclude.chr))]
+bins.per.chr <- sapply(chrs, FUN = function(x) length(unlist(input$results_r[x])))
+chr.end.pos <- c(0)
+for (chr in chrs){
+  l = bins.per.chr[chr]
+  chr.end.pos <- c(chr.end.pos, l + chr.end.pos[length(chr.end.pos)])
+}
+
+# prepare for CBS
+
+var[var == 0] = NA
+# Only segments will be further processed with this data.
+# Software will not account for 0's (these bins probably had no reference)
+
+for.cbs <- as.data.frame(var)
+chr.rep <- c()
+chr.rep.2 <- c()
+for (chr in chrs){
+  chr.rep <- c(chr.rep, rep(chr, chr.end.pos[chr + 1] - chr.end.pos[chr]))
+  chr.rep.2 <- c(chr.rep.2, 1:(chr.end.pos[chr + 1] - chr.end.pos[chr]))
+}
+for.cbs$chromosome <- chr.rep; for.cbs$x <- chr.rep.2
+for.cbs <- for.cbs[, c(2,3,1)] ; colnames(for.cbs)[3] <- "y"
+
+# CBS
+
+CNA.object <- CNA(for.cbs$y, for.cbs$chromosome, for.cbs$x, data.type = "logratio", sampleid = "X")
+f = file()
+sink(file=f) ## silence output
+CNA.object <- invisible(segment(CNA.object, alpha = 1e-5, verbose=1)$output)
+sink() ## undo silencing
+close(f)
+
+# Write output
+
+write_json(t(CNA.object), out.file)
