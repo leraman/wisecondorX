@@ -308,8 +308,6 @@ def toolTest(args):
 
 
 def generateTxtOuts(args, binsize, json_out):
-	output_dir = os.path.dirname(os.path.abspath(args.outid))
-
 	bed_file = open(args.outid + "_bins.bed","w")
 	bed_file.write("chr\tstart\tend\tid\tratio\n")
 	resultsR = json_out["results_r"]
