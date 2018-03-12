@@ -562,9 +562,7 @@ def main():
 		help='Outputs .png plots')
 	parser_test.set_defaults(func=toolTest)
 
-
 	args = parser.parse_args(sys.argv[1:])
-	printArgs(args)
 	args.func(args)
 
 
