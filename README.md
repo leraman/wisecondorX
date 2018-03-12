@@ -31,7 +31,7 @@ There are three main stages for using wisecondorX:
         - It is of paramount importance that the reference set consists of exclusively healthy samples that originate from the same 
         sequencer, mapper, reference genome, type of material, ... etc, as the test samples. As a rule of thumb, think of
         all laboratory and in silico pre-processing steps: the more sources of bias that can be omitted, the better.  
-        - Try to aim at including at least 50 reference samples per reference. To more the better, yet, from 200 on is
+        - Try to aim at including at least 50 reference samples per reference. The more the better, yet, from 200 on is
         unlikely to observe additional improvement concerning normalization.  
 - Predicting CNAs (using the reference and test .npz cases of interest)
 
