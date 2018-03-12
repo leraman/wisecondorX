@@ -184,7 +184,7 @@ def toolTest(args):
 	start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
 				  time_at_start.hour, time_at_start.minute, time_at_start.second]
 
-	if not args.json and not args.txt and not args.plot:
+	if not args.json and not args.bed and not args.plot:
 		print "ERROR: No output format selected"
 		print "Select at least one of the supported output formats (-json, -txt, -plot)"
 		exit(1)
@@ -287,7 +287,7 @@ def toolTest(args):
 	json_file.close()
 
 	# Save txt: optional
-	if args.txt:
+	if args.bed:
 		generateTxtOuts(args, binsize, json_out)
 
 	# Plot: optional
@@ -310,8 +310,8 @@ def toolTest(args):
 def generateTxtOuts(args, binsize, json_out):
 	output_dir = os.path.dirname(os.path.abspath(args.outid))
 
-	bed_file = open(output_dir + "/" + args.outid + ".bed","w")
-	bed_file.write("track name=\"" + args.outid + "\" description=\"rscore\"\n")
+	bed_file = open(args.outid + "_bins.bed","w")
+	bed_file.write("chr\tstart\tend\tid\tratio\n")
 	resultsR = json_out["results_r"]
 	for chr_i in range(len(resultsR)):
 		chr = str(chr_i + 1)
@@ -322,15 +322,19 @@ def generateTxtOuts(args, binsize, json_out):
 		feat = 1
 		for feat_i in range(len(resultsR[chr_i])):
 			r = resultsR[chr_i][feat_i]
+			if r == 0:
+				r = "NaN"
 			feat_str = chr + ":" + str(feat) + "-" + str(feat + binsize - 1)
-			it = [chr, feat - 1, feat + binsize - 1, feat_str, r, "+"]
+			it = [chr, feat - 1, feat + binsize - 1, feat_str, r]
 			it = [str(x) for x in it]
 			bed_file.write("\t".join(it) + "\n")
 			feat += binsize
 	bed_file.close()
 
-	segments_file = open(output_dir + "/" + args.outid + "_segments.txt","w")
-	for segment in json_out["cbs_calls"]:
+	segments_file = open(args.outid + "_segments.bed","w")
+	segments_file.write("chr\tstart\tend\tratio\n")
+	segments = json_out["cbs_calls"]
+	for segment in segments:
 		chr = str(int(segment[0]))
 		if chr == "23":
 			chr = "X"
@@ -341,7 +345,8 @@ def generateTxtOuts(args, binsize, json_out):
 		segments_file.write("\t".join(it) + "\n")
 	segments_file.close()
 
-	statistics_file = open(output_dir + "/statistics.out","w")
+	statistics_file = open(args.outid + "_statistics.txt","w")
+	statistics_file.write("Chromosomal ratios:\n")
 	chrom_scores = []
 	for chr_i in range(len(resultsR)):
 		chr = str(chr_i + 1)
@@ -350,11 +355,21 @@ def generateTxtOuts(args, binsize, json_out):
 		if chr == "24":
 			chr = "Y"
 		chrom_score = np.mean(resultsR[chr_i])
-		statistics_file.write("\"chr" + str(chr) + "\" " + str(chrom_score) + "\n")
+		statistics_file.write("chr" + str(chr) + " " + str(chrom_score) + "\n")
 		chrom_scores.append(chrom_score)
 
-	statistics_file.write("\"stdev\" " + str(np.std(chrom_scores)))
+	statistics_file.write("Standard deviation of chromosomal ratios: " + str(np.std(chrom_scores)) + "\n")
+	statistics_file.write("Median of all within-segment variances: " + str(getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
 	statistics_file.close()
+
+def getMedianWithinSegmentVariance(segments, binratios):
+	vars = []
+	for segment in segments:
+		segmentRatios = binratios[int(segment[0]) - 1][int(segment[1]):int(segment[2])]
+		segmentRatios = [x for x in segmentRatios if x != 0]
+		var = np.var(segmentRatios)
+		vars.append(var)
+	return np.median(vars)
 
 
 def applyBlacklist(args, binsize, resultsR, resultsZ, sample, gender):
@@ -541,9 +556,9 @@ def main():
 	parser_test.add_argument('-json',
 		action="store_true",
 		help='Outputs .json file, containing all generated information')
-	parser_test.add_argument('-txt',
+	parser_test.add_argument('-bed',
 		action="store_true",
-		help='Outputs tab-delimited text files, containing the most important information')
+		help='Outputs tab-delimited .bed files, containing the most important information')
 	parser_test.add_argument('-plot',
 		action="store_true",
 		help='Outputs .png plots')
