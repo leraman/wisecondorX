@@ -19,7 +19,7 @@ There are three main stages for using wisecondorX:
         - Reference samples should be divided in two distinct groups, one for males and one for females. This is required to correctly
         normalize the X and/or Y chromosome.  
         - When the female reference is given to the [`predict`](#stage-3-predict-cnas) function, chromosome X will be analysed;
-        when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test cases!  
+        when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case!  
         - For some references (depending on the mapper, reference genome, type of material, ... etc) the Y chromosome will contain
         lots of blacklisted regions (> 75%), caused by mapping problems. This is because wisecondorX blacklists regions automatically when
         the reference set shows too much variability to reliably call CNAs when running the [`predict`](#stage-3-predict-cnas) function.
@@ -28,9 +28,11 @@ There are three main stages for using wisecondorX:
         - For NIPT, exclusively a female reference should be created. This implies that for NIPT, wisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
         is created using pregnancies of female fetuses only.  
-        - It is of paramount importance that the reference set only contains healthy samples that originate from the same 
+        - It is of paramount importance that the reference set consists of exclusively healthy samples that originate from the same 
         sequencer, mapper, reference genome, type of material, ... etc, as the test samples. As a rule of thumb, think of
         all laboratory and in silico pre-processing steps: the more sources of bias that can be omitted, the better.  
+        - Try to aim at including at least 50 reference samples per reference. To more the better, yet, from 200 on is
+        unlikely to observe additional improvement concerning normalization.  
 - Predicting CNAs (using the reference and test .npz cases of interest)
 
 ### Stage (1) Convert .bam to .npz
@@ -77,7 +79,7 @@ There are three main stages for using wisecondorX:
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
 :--- | :---  
 `-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
-`-maskrepeats x` | Regions with distances > mean + sd * 3 will be masked, number of masking cycles (default: x=5)  
+`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=5)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
 `-json` | Outputs .json file  **(\*)**
 `-txt` | Outputs tab-delimited .txt files  **(\*)**
@@ -89,7 +91,7 @@ There are three main stages for using wisecondorX:
 
 # Parameters
 
-The default parameters are optimized for using shallow whole-genome sequencing data (0.1x - 1x depth; sWGS) and reference bin sizes 
+The default parameters are optimized for shallow whole-genome sequencing data (0.1x - 1x depth; sWGS) and reference bin sizes 
 ranging from 50 to 200 kb. When increasing the reference bin size (`-binsize`), I recommend lowering the reference locations 
 per target (`-refsize`) and the minimum amount of sensible reference bins per target bin (`-minrefbins`). Further note that a
 reference bin size lower than 15 kb is not advisable, unless a higher sequencing depth was used.
@@ -107,7 +109,7 @@ output to program a personal solution.
 # Underlying algorithm
 
 To understand the underlying algorithm, I highly recommend reading [Straver et al (2014)](https://www.ncbi.nlm.nih.gov/pubmed/24170809).
-Some minor adaptations to this algorithm have been made, e.g. additional median centering on final log2-ratios, removal of
+Some minor adaptations to this algorithm have been made, e.g. additional median centering and variance stabilization (log2) on final ratios, removal of
 less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, and &mdash; last but not least &mdash;
 restrictions on within-sample referencing:  
 
