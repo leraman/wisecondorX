@@ -118,7 +118,6 @@ for (i in 1:7){
   l.matrix <- rbind(l.matrix, c(rep(2, 22),rep(3, 3)))
 }
 
-
 layout(l.matrix)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
@@ -144,13 +143,15 @@ for (x in chr.end.pos){
 par(xpd=TRUE)
 # Legends
 if (plot.constitutionals){
-  legend(x=chr.end.pos[length(chr.end.pos)] * 0.2, y = chr.wide.upper.limit + abs(chr.wide.upper.limit) * 0.25, 
+  legend(x=chr.end.pos[length(chr.end.pos)] * 0.2, 
+         y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15, 
          legend = c("Constitutional triploid", "Constitutional diploid", "Constitutional monoploid"),
          text.col = c(yellow, orange, red), cex = 1.3, bty="n", text.font = 1.8, lty = c(3,3,3),
          col = c(yellow, orange, red))
 }
 
-legend(x=0, y = chr.wide.upper.limit + abs(chr.wide.upper.limit) * 0.25,
+legend(x=0,
+       y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15,
        legend = c("CBS segment", paste0("Number of reads: ", nreads)), text.col = c(green, black),
        cex = 1.3, bty="n", text.font = 1.8, lty = c(1,0), col = c(green, black))
 par(xpd=FALSE)
@@ -176,7 +177,8 @@ box("figure", lwd = 1)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
-boxplot(box.list[1:22], ylim=c(min(l.whis.per.chr[1:22]), max(h.whis.per.chr[1:22])), bg=black, axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
+boxplot(box.list[1:22], ylim=c(min(l.whis.per.chr[1:22]), max(h.whis.per.chr[1:22])), bg=black, 
+        axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:22, labels=labels[1:22], tick = F, cex.lab = 3)
@@ -189,7 +191,8 @@ if (plot.constitutionals){
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
-boxplot(box.list[23:length(chrs)], ylim=c(min(l.whis.per.chr[23:length(chrs)]), max(h.whis.per.chr[23:length(chrs)])), bg=black, axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
+boxplot(box.list[23:length(chrs)], ylim=c(min(l.whis.per.chr[23:length(chrs)]), max(h.whis.per.chr[23:length(chrs)])), 
+        bg=black, axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:(length(chrs) - 22), labels=labels[23:length(chrs)], tick = F, cex.lab = 3)

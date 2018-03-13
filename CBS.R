@@ -7,16 +7,18 @@ arguments = "
 --infile          - (mandatory argument) input .json file
 --sexchroms       - (mandatory argument) which sex chromosomes will be analyzed? (X or XY)
 --outfile         - (mandatory argument) output .json file
+--alpha           - (mandatory argument) p-value for segmentation
 
 "
 
 args <- commandArgs(TRUE)
 
 
-if (all(c(args[1], args[3]) %in% c("--infile", "--sexchroms", "--outfile"))){
+if (all(c(args[1], args[3], args[5], args[7]) %in% c("--infile", "--sexchroms", "--outfile", "--alpha"))){
   in.file <- paste0(args[which(args == "--infile")+1])
   sex.chrom <- paste0(args[which(args == "--sexchroms")+1])
   out.file <- paste0(args[which(args == "--outfile")+1])
+  alpha <- paste0(args[which(args == "--alpha")+1])
 }
 
 # -----
@@ -75,7 +77,7 @@ for.cbs <- for.cbs[, c(2,3,1)] ; colnames(for.cbs)[3] <- "y"
 CNA.object <- CNA(for.cbs$y, for.cbs$chromosome, for.cbs$x, data.type = "logratio", sampleid = "X")
 f = file()
 sink(file=f) ## silence output
-CNA.object <- invisible(segment(CNA.object, alpha = 1e-5, verbose=1)$output)
+CNA.object <- invisible(segment(CNA.object, alpha = as.numeric(alpha), verbose=1)$output)
 sink() ## undo silencing
 close(f)
 

@@ -408,7 +408,7 @@ def getBMScore(args, resultsR, gender):
 
 	os.popen(
 		"Rscript \"" + CBS_script + "\" --infile \"" + json_cbs_temp_dir + "_01.json\" --outfile \"" +
-		json_cbs_temp_dir + "_02.json\"" + " --sexchroms " + sexchrom)
+		json_cbs_temp_dir + "_02.json\"" + " --sexchroms " + sexchrom + " --alpha " + str(args.alpha))
 	os.remove(json_cbs_temp_dir + "_01.json")
 	cbs_data = json.load(open(json_cbs_temp_dir + "_02.json"))[1:]
 	cbs_data = [[float(y.encode("utf-8")) for y in x] for x in cbs_data]
@@ -548,6 +548,9 @@ def main():
 	parser_test.add_argument('-maskrepeats',
 		type=int, default=5,
 		help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles')
+	parser_test.add_argument('-alpha',
+		type=float, default=1e-4,
+		help='P-value cut-off for calling a CBS breakpoint')
 	parser_test.add_argument('-blacklist',type=str, default=None,
 		help='Blacklist that masks regions in output, structure of header-less'
 		     'file chr...(/t)startpos(/t)endpos(/n)')

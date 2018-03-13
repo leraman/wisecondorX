@@ -80,6 +80,7 @@ There are three main stages for using wisecondorX:
 :--- | :---  
 `-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
 `-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=5)  
+`-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
 `-json` | Outputs .json file, containing all output information  **(\*)**
 `-bed` | Outputs tab-delimited .bed files, containing most import information  **(\*)**
