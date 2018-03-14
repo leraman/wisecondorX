@@ -19,12 +19,9 @@ There are three main stages for using wisecondorX:
         - Reference samples should be divided in two distinct groups, one for males and one for females. This is required to correctly
         normalize the X and/or Y chromosome.  
         - When the female reference is given to the [`predict`](#stage-3-predict-cnas) function, chromosome X will be analysed;
-        when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case!  
-        - For some references (depending on the mapper, reference genome, type of material, ... etc) the Y chromosome will contain
-        lots of blacklisted regions (> 75%), caused by mapping problems. This is because wisecondorX blacklists regions automatically when
-        the reference set shows too much variability to reliably call CNAs when running the [`predict`](#stage-3-predict-cnas) function.
-        If too little Y information remains, I would advice you to use a female reference only. Doing this, the X chromosome will
-        be normalized even more reliably (and the Y chromosome will be excluded).  
+        when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case,
+        although I would **not** advice to use a male reference and a female test case, or vice versa &mdash; this because numerous Y reads
+        wrongly map the X chromosome. Using a matching reference, the latter is accounted for.
         - For NIPT, exclusively a female reference should be created. This implies that for NIPT, wisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
         is created using pregnancies of female fetuses only.  
