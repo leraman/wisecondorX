@@ -74,7 +74,7 @@ labels = replace(labels, labels == "chr24", "chrY")
 
 # find chromosome positions
 
-chr.end.pos <- c(0)
+chr.end.pos <- c(1)
 for (chr in chrs){
   l = bins.per.chr[chr]
   chr.end.pos <- c(chr.end.pos, l + chr.end.pos[length(chr.end.pos)])
@@ -106,6 +106,8 @@ chr.wide.lower.limit <- min(-0.8, min(l.whis.per.chr)) * 1.25
 # plot chromosome wide plot
 
 black = "#3f3f3f"
+lighter.grey = "#e0e0e0"
+darker.grey = "#9e9e9e"
 green = "#03bf2e"
 orange = "#cc8c0c"
 red = "#d10606"
@@ -121,6 +123,15 @@ for (i in 1:7){
 layout(l.matrix)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
+
+plot(var, main = "", axes=F, # plots nothing -- enables segments function
+     xlab="", ylab="", col = "white", 
+     cex = 0.0001, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg=black)
+
+for (undetectable.index in which(is.na(var))){
+  segments(undetectable.index, chr.wide.lower.limit, undetectable.index, chr.wide.upper.limit, col=lighter.grey, lwd = 0.1, lty = 1)
+}
+par(new = T)
 
 plot(var, main = "", axes=F,
      xlab="", ylab=expression('Ratio (log'[2]*')'), col = black, pch = 21, 
@@ -152,8 +163,8 @@ if (plot.constitutionals){
 
 legend(x=0,
        y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15,
-       legend = c("CBS segment", paste0("Number of reads: ", nreads)), text.col = c(green, black),
-       cex = 1.3, bty="n", text.font = 1.8, lty = c(1,0), col = c(green, black))
+       legend = c("CBS segment", "Highly variable region", paste0("Number of reads: ", nreads)), text.col = c(green, darker.grey, black),
+       cex = 1.3, bty="n", text.font = 1.8, lty = c(1,1,0), col = c(green, darker.grey, black))
 par(xpd=FALSE)
 
 # plot segmentation
@@ -220,14 +231,24 @@ for (c in chrs){
   x.labels.at <- x.labels.at[2:(length(x.labels.at) - 1)]
   
   png(paste0(out.dir, "/", labels[c],".png"), width=14,height=10,units="in",res=256)
-
-  par(mar = c(4,4,4,0), mgp=c(2.2,-0.2,2))
   
   mean = mean(box.list[[c]], na.rm = T)
   whis = boxplot(box.list[[c]], plot = F)$stats[c(1,5),]
   
   upper.limit <- 0.8 + whis[2]
   lower.limit <- -0.8 + whis[1]
+  
+  par(mar = c(4,4,4,0), mgp=c(2.2,-0.2,2))
+  
+  plot(var, main = "", axes=F, # plots nothing -- enables segments function
+       xlab="", ylab="", col = "white", 
+       cex = 0.0001, ylim=c(lower.limit,upper.limit), xlim = margins)
+  
+  for (undetectable.index in which(is.na(var))){
+    segments(undetectable.index, lower.limit, undetectable.index, upper.limit,
+             col=darker.grey, lwd = 0.1, lty = 1)
+  }
+  par(new = T)
   
   plot(var, main = labels[c], axes=F,
        xlab="", ylab=expression('Ratio (log'[2]*')'), col = black, pch = 21, 
@@ -265,8 +286,7 @@ for (c in chrs){
   for (x in x.labels.at){
     segments(x, lower.limit, x, upper.limit, col=green, lwd = 0.5, lty = 3)
   }
+  invisible(dev.off())
 }
-
-invisible(dev.off())
 
 q(save="no")
