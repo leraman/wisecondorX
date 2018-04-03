@@ -124,9 +124,9 @@ layout(l.matrix)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
-plot(var, main = "", axes=F, # plots nothing -- enables segments function
-     xlab="", ylab="", col = "white", 
-     cex = 0.0001, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg=black)
+plot(1, main = "", axes=F, # plots nothing -- enables segments function
+     xlab="", ylab="", col = "white", xlim = c(chr.end.pos[1], chr.end.pos[length(chr.end.pos)]),
+     cex = 0.0001, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit))
 
 for (undetectable.index in which(is.na(var))){
   segments(undetectable.index, chr.wide.lower.limit, undetectable.index, chr.wide.upper.limit, col=lighter.grey, lwd = 0.1, lty = 1)
@@ -134,7 +134,7 @@ for (undetectable.index in which(is.na(var))){
 par(new = T)
 
 plot(var, main = "", axes=F,
-     xlab="", ylab=expression('Ratio (log'[2]*')'), col = black, pch = 21, 
+     xlab="", ylab=expression('log'[2]*'(ratio)'), col = black, pch = 21, 
      cex = 0.4, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg=black)
 
 axis(1, at=mid.chr, labels=labels, tick = F, cex.lab = 3)
@@ -148,7 +148,7 @@ if (plot.constitutionals){
 }
 
 for (x in chr.end.pos){
-  segments(x, chr.wide.lower.limit, x, chr.wide.upper.limit, col=green, lwd = 0.5, lty = 3)
+  segments(x, chr.wide.lower.limit, x, chr.wide.upper.limit, col=green, lwd = 1, lty = 3)
 }
 
 par(xpd=TRUE)
@@ -225,6 +225,7 @@ invisible(dev.off())
 for (c in chrs){
   
   margins <- c(chr.end.pos[c], chr.end.pos[c+1])
+  len <- chr.end.pos[c+1] - chr.end.pos[c]
   x.labels <- seq(0, bins.per.chr[c] * binsize, bins.per.chr[c] * binsize / 10)
   x.labels.at <- seq(0, bins.per.chr[c], bins.per.chr[c] / 10) + chr.end.pos[c]
   x.labels <- x.labels[2:(length(x.labels) - 1)]
@@ -240,13 +241,13 @@ for (c in chrs){
   
   par(mar = c(4,4,4,0), mgp=c(2.2,-0.2,2))
   
-  plot(var, main = "", axes=F, # plots nothing -- enables segments function
+  plot(1, main = "", axes=F, # plots nothing -- enables segments function
        xlab="", ylab="", col = "white", 
        cex = 0.0001, ylim=c(lower.limit,upper.limit), xlim = margins)
   
   for (undetectable.index in which(is.na(var))){
     segments(undetectable.index, lower.limit, undetectable.index, upper.limit,
-             col=darker.grey, lwd = 0.1, lty = 1)
+             col=darker.grey, lwd = 1/len * 200, lty = 1)
   }
   par(new = T)
   
@@ -284,7 +285,7 @@ for (c in chrs){
     segments(x, lower.limit, x, upper.limit, col=green, lwd = 2, lty = 3)
   }
   for (x in x.labels.at){
-    segments(x, lower.limit, x, upper.limit, col=green, lwd = 0.5, lty = 3)
+    segments(x, lower.limit, x, upper.limit, col=green, lwd = 1, lty = 3)
   }
   invisible(dev.off())
 }
