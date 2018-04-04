@@ -1,23 +1,23 @@
-#/bin/bash
-#PBS -l walltime=72:00:00
+#!/usr/bin/env bash
+#PBS -l walltime=383:59:59
 #PBS -l nodes=1:ppn=1
 
 # PARAMETERS
 
-WISECONDORX_DIR="/home/leraman/tools/wisecondorX"
+WISECONDORX_DIR="path/to/wisecondorX" # wisecondorX clone
 
-NPZs_FILE="/Users/leraman/samples.txt"
+NPZ_FILES="path/to/samples.txt" # cases that will be tested versus the given reference
 # Example of the structure of this file:
-# D4984165 x/x/convert.case.output/D4984165.npz
-# D4984166 x/x/convert.case.output/D4984166.npz
+# ID_1 path/to/convert.npz/ID_1.npz
+# ID_2 path/to/convert.npz/ID_2.npz
 # ...
-REF="/Users/leraman/newref.output/reference.hg38.50kb.npz"
-OUTPUT_DIR="/Users/leraman/predict.output"
+REF="path/to/newref.npz/reference.hg38.F.50kb.npz" # the cases in the NPZ_FILES document are thus expected to be female
+OUTPUT_DIR="path/to/predict.output" # existing output folder
 
 
 # OPTIONAL PARAMETERS
 
-OPT="-plot"
+OPT="-plot -txt -json" # all output formats
 
 # SCRIPT
 
@@ -28,4 +28,4 @@ while read LINE; do
 
     python2 ${WISECONDORX_DIR}/wisecondorX.py predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
 
-done <${NPZs_FILE}
+done <${NPZ_FILES}

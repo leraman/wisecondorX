@@ -1,53 +1,26 @@
-#/bin/bash
+#!/usr/bin/env bash
 #PBS -l walltime=383:59:59
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=1
 
 # PARAMETERS
 
-WISECONDORX_DIR="/home/leraman/tools/wisecondorX"
-CORES=4
+WISECONDORX_DIR="path/to/wisecondorX" # wisecondorX clone
 
-FASTQ_FILES="/home/leraman/fastq.txt"
+BAM_FILES="path/to/bam_files.txt" # reference or test cases
 # Example of the structure of this file:
-# D4984165 ././D4984165_S05_xxx_002.fastq.gz,././D4984165_S05_xxx_003.fastq.gz,././D4984165_S05_xxx_004.fastq.gz
-# D4984166 ././D4984165_S06_xxx_002.fastq.gz,././D4984166_S05_xxx_003.fastq.gz,././D4984166_S05_xxx_004.fastq.gz
-BOWTIE2_INDEX="/Shared/references/Hsapiens/hg38/hg38/hg38full/bowtie2_index/hg38full"
-NPZ_OUTPUT_DIR="/home/leraman/convert.ref.output"
+# ID_1 path/to/ID_1.bam
+# ID_2 path/to/ID_2.bam
+OUTPUT_DIR="path/to/convert.npz"
 
 # SCRIPT
 
-cd ${NPZ_OUTPUT_DIR}
-
-while IFS='' read -r LINE || [[ -n "$line" ]]; do
+while read LINE; do
 
     SAMPLE=$(echo $LINE | awk -F ' ' '{print $1}')
-    FASTQS=$(echo $LINE | awk -F ' ' '{print $2}')
-
-    BOWTIE_INPUT=""
-    for FASTQ in $(echo ${FASTQS} | sed "s/,/ /g") ; do
-        BOWTIE_INPUT="${BOWTIE_INPUT},${FASTQ}"
-    done
-    BOWTIE_INPUT=$(echo ${BOWTIE_INPUT:1})
-
-    #Map fastqs
-    echo "mapping sample ${SAMPLE}"
-
-    bowtie2 --local \
-      -p ${CORES} \
-      --fast-local \
-      -x ${BOWTIE2_INDEX} \
-      -U ${BOWTIE_INPUT} \
-    | bamsormadup \
-      inputformat=sam \
-      threads=${CORES} \
-      SO=coordinate \
-      outputformat=bam \
-      indexfilename=${SAMPLE}.bam.bai > ${SAMPLE}.bam
+    BAM=$(echo $LINE | awk -F ' ' '{print $2}')
 
     #Create bins @5kb
     echo "creating 5kb bins for sample ${SAMPLE}"
-    python2 ${WISECONDORX_DIR}/wisecondorX.py convert ${SAMPLE}.bam ${SAMPLE}.npz
-    rm ${SAMPLE}.bam.bai
-    rm ${SAMPLE}.bam
+    python2 ${WISECONDORX_DIR}/wisecondorX.py convert ${BAM} ${OUTPUT_DIR}/${SAMPLE}.npz
 
-done < ${FASTQ_FILES}
+done < ${BAM_FILES}

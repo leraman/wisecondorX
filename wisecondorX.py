@@ -10,10 +10,7 @@
 import argparse
 import sys
 from scipy.stats import norm
-import json
-import os
-import math
-from wisetools import *
+from python.wisetools import *
 
 def toolConvert(args):
 	converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
@@ -176,9 +173,10 @@ def toolNewrefPost(args):
 						pca_mean=pca_mean,
 						gender=args.gender)
 
-
 # Most of this "tool" is actually basic functionality and should be in wisetools.py instead (and still is in WCX!)
 def toolTest(args):
+
+	WC_dir = os.path.realpath(__file__)
 
 	time_at_start = datetime.datetime.now()
 	start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
@@ -259,14 +257,14 @@ def toolTest(args):
 	for c in range(nchrs):
 		for i, rR in enumerate(resultsR[c]):
 			if not np.isfinite(rR):
-				resultsR[c][i] = 0 # 0 -> not interesting
+				resultsR[c][i] = 0 # 0 -> result not found; translated to NA in R
 	resultsZ = [x.tolist() for x in resultsZ]
 	for c in range(nchrs):
 		for i, rR in enumerate(resultsZ[c]):
 			if not np.isfinite(rR):
-				resultsZ[c][i] = 0 # 0 -> not interesting
+				resultsZ[c][i] = 0 # 0 -> result not found; translated to NA in R
 
-	cbs_calls = getBMScore(args, resultsR, gender)
+	cbs_calls = CBS(args, resultsR, gender, WC_dir)
 
 	time_at_end = datetime.datetime.now()
 	end_time = [time_at_end.year, time_at_end.month, time_at_end.day,
@@ -290,14 +288,14 @@ def toolTest(args):
 	if args.bed:
 		generateTxtOuts(args, binsize, json_out)
 
-	# Plot: optional
+	# Create plots: optional
 	if args.plot:
-		plot_script = str(os.path.dirname(os.path.realpath(__file__))) + "/plotter.R"
+		plot_script = str(os.path.dirname(WC_dir)) + "/R/plotter.R"
 		if gender == "M":
 			sexchrom = "XY"
 		else:
 			sexchrom = "X"
-		os.popen("Rscript \"" + plot_script + "\" --infile \"" +args.outid + ".json\" --outdir \"" +
+		os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + ".json\" --outdir \"" +
 				 args.outid + ".plots\"" + " --sexchroms " + sexchrom)
 
 	if not args.json:
@@ -305,135 +303,6 @@ def toolTest(args):
 
 	print("Done!")
 	exit(0)
-
-
-def generateTxtOuts(args, binsize, json_out):
-	bed_file = open(args.outid + "_bins.bed","w")
-	bed_file.write("chr\tstart\tend\tid\tratio\n")
-	resultsR = json_out["results_r"]
-	for chr_i in range(len(resultsR)):
-		chr = str(chr_i + 1)
-		if chr == "23":
-			chr = "X"
-		if chr == "24":
-			chr = "Y"
-		feat = 1
-		for feat_i in range(len(resultsR[chr_i])):
-			r = resultsR[chr_i][feat_i]
-			if r == 0:
-				r = "NaN"
-			feat_str = chr + ":" + str(feat) + "-" + str(feat + binsize - 1)
-			it = [chr, feat - 1, feat + binsize - 1, feat_str, r]
-			it = [str(x) for x in it]
-			bed_file.write("\t".join(it) + "\n")
-			feat += binsize
-	bed_file.close()
-
-	segments_file = open(args.outid + "_segments.bed","w")
-	segments_file.write("chr\tstart\tend\tratio\n")
-	segments = json_out["cbs_calls"]
-	for segment in segments:
-		chr = str(int(segment[0]))
-		if chr == "23":
-			chr = "X"
-		if chr == "24":
-			chr = "Y"
-		it = [chr, int(segment[1] * binsize + 1), int((segment[2] + 1) * binsize), segment[4]]
-		it = [str(x) for x in it]
-		segments_file.write("\t".join(it) + "\n")
-	segments_file.close()
-
-	statistics_file = open(args.outid + "_statistics.txt","w")
-	statistics_file.write("Chromosomal ratios:\n")
-	chrom_scores = []
-	for chr_i in range(len(resultsR)):
-		chr = str(chr_i + 1)
-		if chr == "23":
-			chr = "X"
-		if chr == "24":
-			chr = "Y"
-		chrom_score = np.mean(resultsR[chr_i])
-		statistics_file.write("chr" + str(chr) + " " + str(chrom_score) + "\n")
-		chrom_scores.append(chrom_score)
-
-	statistics_file.write("Standard deviation of chromosomal ratios: " + str(np.std(chrom_scores)) + "\n")
-	statistics_file.write("Median of all within-segment variances: " + str(getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
-	statistics_file.close()
-
-def getMedianWithinSegmentVariance(segments, binratios):
-	vars = []
-	for segment in segments:
-		segmentRatios = binratios[int(segment[0]) - 1][int(segment[1]):int(segment[2])]
-		segmentRatios = [x for x in segmentRatios if x != 0]
-		var = np.var(segmentRatios)
-		vars.append(var)
-	return np.median(vars)
-
-
-def applyBlacklist(args, binsize, resultsR, resultsZ, sample, gender):
-	blacklist = {}
-
-	for line in open(args.blacklist):
-		bchr, bstart, bstop = line.strip().split("\t")
-		bchr = bchr[3:]
-		if bchr not in blacklist.keys():
-			blacklist[bchr] = []
-		blacklist[bchr].append([int(int(bstart) / binsize), int(int(bstop) / binsize) + 1])
-
-	for chr in blacklist.keys():
-		for s_s in blacklist[chr]:
-			if chr == "X":
-				chr = "23"
-			if chr == "Y":
-				chr = "24"
-			for pos in range(s_s[0], s_s[1]):
-				if gender == "F" and chr == "24":
-					continue
-				resultsR[int(chr) - 1][pos] = 0
-				resultsZ[int(chr) - 1][pos] = 0
-				sample[chr][pos] = 0
-
-
-def getBMScore(args, resultsR, gender):
-	json_cbs_temp_dir = os.path.abspath(args.outid + "_CBS_tmp")
-	json_cbs_file = open(json_cbs_temp_dir + "_01.json", "w")
-	json.dump({"results_r": resultsR}, json_cbs_file)
-	json_cbs_file.close()
-	CBS_script = str(os.path.dirname(os.path.realpath(__file__))) + "/CBS.R"
-
-	if gender == "M":
-		sexchrom = "XY"
-	else:
-		sexchrom = "X"
-
-	os.popen(
-		"Rscript \"" + CBS_script + "\" --infile \"" + json_cbs_temp_dir + "_01.json\" --outfile \"" +
-		json_cbs_temp_dir + "_02.json\"" + " --sexchroms " + sexchrom + " --alpha " + str(args.alpha))
-	os.remove(json_cbs_temp_dir + "_01.json")
-	cbs_data = json.load(open(json_cbs_temp_dir + "_02.json"))[1:]
-	cbs_data = [[float(y.encode("utf-8")) for y in x] for x in cbs_data]
-	os.remove(json_cbs_temp_dir + "_02.json")
-
-	BM_scores = []
-	for cbs_call_index in range(len(cbs_data[0])):
-		chr_i = int(cbs_data[0][cbs_call_index]) - 1
-		start = int(cbs_data[1][cbs_call_index]) - 1
-		end = int(cbs_data[2][cbs_call_index])  # no - 1! (closed interval in python)
-
-		BM_score = np.median(resultsR[chr_i][start:end])
-		if math.isnan(BM_score):
-			BM_score = 0.0
-		BM_scores.append(BM_score)
-
-	# Save results
-
-	cbs_calls = []
-	for cbs_call_index in range(len(cbs_data[0])):
-		cbs_calls.append(
-			[cbs_data[0][cbs_call_index], cbs_data[1][cbs_call_index] - 1, cbs_data[2][cbs_call_index] - 1,
-			 BM_scores[cbs_call_index], cbs_data[4][cbs_call_index]])
-	return cbs_calls
-
 
 def reformat(args):
 	original = np.load(args.infile)
@@ -446,7 +315,7 @@ def reformat(args):
 		updated_sample_data[str(i)] = sample_data.item()[chr]
 		i += 1
 
-	np.savez_compressed(args.outid, arguments=original['arguments'], runtime=original['runtime'],
+	np.savez_compressed(args.outfile, arguments=original['arguments'], runtime=original['runtime'],
 						sample=updated_sample_data, quality=original['quality'])
 
 def get_gender(args):
@@ -470,16 +339,16 @@ def main():
 
 	# File conversion
 	parser_convert = subparsers.add_parser('convert',
-		description='Convert and filter a bam file to an npz')
+		description='Convert and filter a .bam file to a .npz')
 	parser_convert.add_argument('infile',
 		type=str,
 		help='Bam input file for conversion')
 	parser_convert.add_argument('outfile',
 		type=str,
-		help='File to write binned information to')
+		help='Output npz file')
 	parser_convert.add_argument('-binsize',
 		type=float, default=5e3,
-		help='Size per bin in bp')
+		help='Bin size (bp)')
 	parser_convert.add_argument('-retdist',
 		type=int, default=4,
 		help='Maximum amount of base pairs difference between sequential reads '
@@ -491,18 +360,18 @@ def main():
 
 	# Reformat
 	parser_reformat = subparsers.add_parser('reformat',
-		description='Reformat an original .npz to a wisecondorX .npz')
+		description='Reformat a WISECONDOR convert.npz to a wisecondorX convert.npz')
 	parser_reformat.add_argument('infile',
-		type=str, help='.npz input file for conversion')
+		type=str, help='.npz input file')
 	parser_reformat.add_argument('outfile',
-		type=str, help='resulting .npz output file')
+		type=str, help='.npz output file')
 	parser_reformat.set_defaults(func=reformat)
 
 	# Find gender
 	parser_gender = subparsers.add_parser('gender',
         description='Predict the gender of a sample')
 	parser_gender.add_argument('infile',
-		type=str, help='.npz input file, resulting from .bam conversion')
+		type=str, help='.npz input file')
 	parser_gender.add_argument('-cutoff',
 		type=float, default=2.5, help='Y-read permille cut-off. Below is female, above is male')
 	parser_gender.set_defaults(func=get_gender)
@@ -512,7 +381,7 @@ def main():
 		description='Create a new reference using healthy reference samples')
 	parser_newref.add_argument('infiles',
 		type=str, nargs='+',
-		help='Path to all reference data files (i.e. ./reference/*.npz)')
+		help='Path to all reference data files (e.g. path/to/reference/*.npz)')
 	parser_newref.add_argument('outfile',
 		type=str,
 		help='Path and filename for the reference output (i.e. ./reference/myref.npz)')
@@ -521,18 +390,18 @@ def main():
 		help='Amount of reference locations per target')
 	parser_newref.add_argument('-binsize',
 		type=int, default=1e5,
-		help='Try to scale samples to this binsize, multiples of existing binsize only')
+		help='Scale samples to this binsize, multiples of existing binsize only')
 	parser_newref.add_argument('-gender',
 		type=str, default="F",
-		help='Gender of the reference data files')
+		help='Gender of the reference .npz input files')
 	parser_newref.add_argument('-cpus',
 		type=int, default=1,
-		help='EXPERIMENTAL: Use multiple cores to find reference bins')
+		help='Use multiple cores to find reference bins')
 	parser_newref.set_defaults(func=toolNewref)
 
 	# Find CNAs
 	parser_test = subparsers.add_parser('predict',
-		description='Find Copy Number Aberrations')
+		description='Find copy number aberrations')
 	parser_test.add_argument('infile',
 		type=str,
 		help='Sample.npz of which the CNAs will be predicted')
@@ -541,19 +410,19 @@ def main():
 		help='Reference as previously created')
 	parser_test.add_argument('outid',
 		type=str,
-		help='Basename (w/o extension) of output files')
+		help='Basename (w/o extension) of output files (paths are allowed, e.g. path/to/ID_1)')
 	parser_test.add_argument('-minrefbins',
 		type=int, default=150,
-		help='Minimum amount of sensible ref bins per target bin')
+		help='Minimum amount of sensible reference bins per target bin')
 	parser_test.add_argument('-maskrepeats',
-		type=int, default=5,
+		type=int, default=4,
 		help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles')
 	parser_test.add_argument('-alpha',
 		type=float, default=1e-4,
 		help='P-value cut-off for calling a CBS breakpoint')
 	parser_test.add_argument('-blacklist',type=str, default=None,
-		help='Blacklist that masks regions in output, structure of header-less'
-		     'file chr...(/t)startpos(/t)endpos(/n)')
+		help='Blacklist that masks regions in output, structure of header-less '
+		     'file: chrX(/t)startpos(/t)endpos(/n)')
 	parser_test.add_argument('-json',
 		action="store_true",
 		help='Outputs .json file, containing all generated information')

@@ -45,7 +45,7 @@ suppressMessages(library("jsonlite"))
 # process data
 
 input <- read_json(in.file)
-var <- as.numeric(unlist(input$results_r))
+ratio <- as.numeric(unlist(input$results_r))
 
 chrs = c(1:24)
 chrs = chrs[which(!(chrs  %in% exclude.chr))]
@@ -58,11 +58,11 @@ for (chr in chrs){
 
 # prepare for CBS
 
-var[var == 0] = NA
+ratio[ratio == 0] = NA
 # Only segments will be further processed with this data.
-# Software will not account for 0's (these bins probably had no reference)
+# Software will not account for 0's (these bins had no reference)
 
-for.cbs <- as.data.frame(var)
+for.cbs <- as.data.frame(ratio)
 chr.rep <- c()
 chr.rep.2 <- c()
 for (chr in chrs){

@@ -61,8 +61,8 @@ nreads <- paste0(nreads, collapse = ".")
 
 # get ratios
 
-var <- unlist(input$results_r)
-var[which(var == 0)] <- NA #0 were introduced if infinite/na values were seen in python. They're all the same: of no interest
+ratio <- unlist(input$results_r)
+ratio[which(ratio == 0)] <- NA #0 were introduced if infinite/na values were seen in python. They're all the same: of no interest
 
 chrs = c(1:24)
 chrs = chrs[which(!(chrs  %in% exclude.chr))]
@@ -85,7 +85,7 @@ for (i in 1:(length(chr.end.pos)-1)){
   mid.chr <- c(mid.chr, mean(c(chr.end.pos[i], chr.end.pos[i+1])))
 }
 
-var <- var[1:chr.end.pos[length(chrs) + 1]]
+ratio <- ratio[1:chr.end.pos[length(chrs) + 1]]
 
 # get margins
 
@@ -94,7 +94,7 @@ l.whis.per.chr <- c()
 h.whis.per.chr <- c()
 
 for (chr in chrs){
-  box.list[[chr]] <- var[chr.end.pos[chr]:chr.end.pos[chr + 1]]
+  box.list[[chr]] <- ratio[chr.end.pos[chr]:chr.end.pos[chr + 1]]
   whis = boxplot(box.list[[chr]], plot = F)$stats[c(1,5),]
   l.whis.per.chr = c(l.whis.per.chr, whis[1])
   h.whis.per.chr = c(h.whis.per.chr, whis[2])
@@ -128,12 +128,12 @@ plot(1, main = "", axes=F, # plots nothing -- enables segments function
      xlab="", ylab="", col = "white", xlim = c(chr.end.pos[1], chr.end.pos[length(chr.end.pos)]),
      cex = 0.0001, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit))
 
-for (undetectable.index in which(is.na(var))){
+for (undetectable.index in which(is.na(ratio))){
   segments(undetectable.index, chr.wide.lower.limit, undetectable.index, chr.wide.upper.limit, col=lighter.grey, lwd = 0.1, lty = 1)
 }
 par(new = T)
 
-plot(var, main = "", axes=F,
+plot(ratio, main = "", axes=F,
      xlab="", ylab=expression('log'[2]*'(ratio)'), col = black, pch = 21, 
      cex = 0.4, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg=black)
 
@@ -163,7 +163,7 @@ if (plot.constitutionals){
 
 legend(x=0,
        y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15,
-       legend = c("CBS segment", "Highly variable region", paste0("Number of reads: ", nreads)), text.col = c(green, darker.grey, black),
+       legend = c("CBS segment", "Unreliable region", paste0("Number of reads: ", nreads)), text.col = c(green, darker.grey, black),
        cex = 1.3, bty="n", text.font = 1.8, lty = c(1,1,0), col = c(green, darker.grey, black))
 par(xpd=FALSE)
 
@@ -245,13 +245,13 @@ for (c in chrs){
        xlab="", ylab="", col = "white", 
        cex = 0.0001, ylim=c(lower.limit,upper.limit), xlim = margins)
   
-  for (undetectable.index in which(is.na(var))){
+  for (undetectable.index in which(is.na(ratio))){
     segments(undetectable.index, lower.limit, undetectable.index, upper.limit,
              col=darker.grey, lwd = 1/len * 200, lty = 1)
   }
   par(new = T)
   
-  plot(var, main = labels[c], axes=F,
+  plot(ratio, main = labels[c], axes=F,
        xlab="", ylab=expression('Ratio (log'[2]*')'), col = black, pch = 21, 
        cex = 0.4, ylim=c(lower.limit,upper.limit),
        xlim = margins, bg=black)

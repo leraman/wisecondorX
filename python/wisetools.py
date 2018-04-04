@@ -6,8 +6,6 @@
 # Attribution-NonCommercial-ShareAlike, CC BY-NC-SA (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
 # This license is governed by Dutch law and this license is subject to the exclusive jurisdiction of the courts of the Netherlands.
 
-import matplotlib
-matplotlib.use('agg')
 import time
 import bisect
 from sklearn.decomposition import PCA
@@ -17,6 +15,9 @@ from triarray import *
 import getpass
 import datetime
 import socket
+import json
+import os
+import math
 
 # Get rid of some useless warnings, I know there are emtpy slices
 import warnings
@@ -454,3 +455,136 @@ def repeatTest(testData, indexes, distances, chromosomeBins, chromosomeBinSums, 
 		testCopy[np_abs(resultsZ) >= threshold] = -1
 	print 'Time spent on obtaining z-scores:', int(time.time() - timeStartTest), 'seconds'
 	return resultsZ, resultsR, refSizes, stdDevAvg
+
+
+def generateTxtOuts(args, binsize, json_out):
+	bed_file = open(args.outid + "_bins.bed","w")
+	bed_file.write("chr\tstart\tend\tid\tratio\n")
+	resultsR = json_out["results_r"]
+	for chr_i in range(len(resultsR)):
+		chr = str(chr_i + 1)
+		if chr == "23":
+			chr = "X"
+		if chr == "24":
+			chr = "Y"
+		feat = 1
+		for feat_i in range(len(resultsR[chr_i])):
+			r = resultsR[chr_i][feat_i]
+			if r == 0:
+				r = "NaN"
+			feat_str = chr + ":" + str(feat) + "-" + str(feat + binsize - 1)
+			it = [chr, feat - 1, feat + binsize - 1, feat_str, r]
+			it = [str(x) for x in it]
+			bed_file.write("\t".join(it) + "\n")
+			feat += binsize
+	bed_file.close()
+
+	segments_file = open(args.outid + "_segments.bed","w")
+	segments_file.write("chr\tstart\tend\tratio\n")
+	segments = json_out["cbs_calls"]
+	for segment in segments:
+		chr = str(int(segment[0]))
+		if chr == "23":
+			chr = "X"
+		if chr == "24":
+			chr = "Y"
+		it = [chr, int(segment[1] * binsize + 1), int((segment[2] + 1) * binsize), segment[4]]
+		it = [str(x) for x in it]
+		segments_file.write("\t".join(it) + "\n")
+	segments_file.close()
+
+	statistics_file = open(args.outid + "_statistics.txt","w")
+	statistics_file.write("chr ratio.mean ratio.median zscore.mean zscore.median\n")
+	chrom_scores = []
+	for chr_i in range(len(resultsR)):
+		chr = str(chr_i + 1)
+		if chr == "23":
+			chr = "X"
+		if chr == "24":
+			chr = "Y"
+		chrom_ratio_mean = np.mean(resultsR[chr_i])
+		chrom_ratio_median = np.median(resultsR[chr_i])
+
+		chrom_z_mean = np.mean(json_out["results_z"][chr_i])
+		chrom_z_median = np.median(json_out["results_z"][chr_i])
+		statistics_file.write("chr" + str(chr) + " " + str(chrom_ratio_mean) + " " + str(chrom_ratio_median) +
+							  " " + str(chrom_z_mean) + " " + str(chrom_z_median) + "\n")
+		chrom_scores.append(chrom_ratio_mean)
+
+	statistics_file.write("Standard deviation of mean chromosomal ratios: " + str(np.std(chrom_scores)) + "\n")
+	statistics_file.write("Median of all within-segment variances: " + str(getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
+	statistics_file.close()
+
+def getMedianWithinSegmentVariance(segments, binratios):
+	vars = []
+	for segment in segments:
+		segmentRatios = binratios[int(segment[0]) - 1][int(segment[1]):int(segment[2])]
+		segmentRatios = [x for x in segmentRatios if x != 0]
+		var = np.var(segmentRatios)
+		vars.append(var)
+	return np.median(vars)
+
+
+def applyBlacklist(args, binsize, resultsR, resultsZ, sample, gender):
+	blacklist = {}
+
+	for line in open(args.blacklist):
+		bchr, bstart, bstop = line.strip().split("\t")
+		bchr = bchr[3:]
+		if bchr not in blacklist.keys():
+			blacklist[bchr] = []
+		blacklist[bchr].append([int(int(bstart) / binsize), int(int(bstop) / binsize) + 1])
+
+	for chr in blacklist.keys():
+		for s_s in blacklist[chr]:
+			if chr == "X":
+				chr = "23"
+			if chr == "Y":
+				chr = "24"
+			for pos in range(s_s[0], s_s[1]):
+				if gender == "F" and chr == "24":
+					continue
+				resultsR[int(chr) - 1][pos] = 0
+				resultsZ[int(chr) - 1][pos] = 0
+				sample[chr][pos] = 0
+
+
+def CBS(args, resultsR, gender, WC_dir):
+	json_cbs_temp_dir = os.path.abspath(args.outid + "_CBS_tmp")
+	json_cbs_file = open(json_cbs_temp_dir + "_01.json", "w")
+	json.dump({"results_r": resultsR}, json_cbs_file)
+	json_cbs_file.close()
+	CBS_script = str(os.path.dirname(WC_dir)) + "/R/CBS.R"
+
+	if gender == "M":
+		sexchrom = "XY"
+	else:
+		sexchrom = "X"
+
+	os.popen(
+		"Rscript \"" + CBS_script + "\" --infile \"" + json_cbs_temp_dir + "_01.json\" --outfile \"" +
+		json_cbs_temp_dir + "_02.json\"" + " --sexchroms " + sexchrom + " --alpha " + str(args.alpha))
+	os.remove(json_cbs_temp_dir + "_01.json")
+	cbs_data = json.load(open(json_cbs_temp_dir + "_02.json"))[1:]
+	cbs_data = [[float(y.encode("utf-8")) for y in x] for x in cbs_data]
+	os.remove(json_cbs_temp_dir + "_02.json")
+
+	BM_scores = []
+	for cbs_call_index in range(len(cbs_data[0])):
+		chr_i = int(cbs_data[0][cbs_call_index]) - 1
+		start = int(cbs_data[1][cbs_call_index]) - 1
+		end = int(cbs_data[2][cbs_call_index])  # no - 1! (closed interval in python)
+
+		BM_score = np.median(resultsR[chr_i][start:end])
+		if math.isnan(BM_score):
+			BM_score = 0.0
+		BM_scores.append(BM_score)
+
+	# Save results
+
+	cbs_calls = []
+	for cbs_call_index in range(len(cbs_data[0])):
+		cbs_calls.append(
+			[cbs_data[0][cbs_call_index], cbs_data[1][cbs_call_index] - 1, cbs_data[2][cbs_call_index] - 1,
+			 BM_scores[cbs_call_index], cbs_data[4][cbs_call_index]])
+	return cbs_calls

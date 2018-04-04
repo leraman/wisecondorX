@@ -1,14 +1,14 @@
 # Introduction  
-After extensively comparing different WGS-based CNA tools, such as [wisecondor](https://github.com/VUmcCGP/wisecondor),
+After extensively comparing different WGS-based CNA tools, including [WISECONDOR](https://github.com/VUmcCGP/wisecondor),
 [QDNAseq](https://github.com/ccagc/QDNAseq), [CNVkit](https://github.com/etal/cnvkit), [Control-FREEC](https://github.com/BoevaLab/FREEC),
-[CNVnator](https://github.com/abyzovlab/CNVnator), [ichorCNA](https://github.com/broadinstitute/ichorCNA), ... etc,
-wisecondor appeared to normalize copy number data in the most consistent way &mdash; by far. Nevertheless,
-as is the case with every tool, wisecondor has limitations of its own: the Stouffer's z-score approach is error-prone when
+[BIC-seq2](http://compbio.med.harvard.edu/BIC-seq/) and [cn.MOPS](https://bioconductor.org/packages/release/bioc/html/cn.mops.html),
+WISECONDOR appeared to normalize copy number data in the most consistent way &mdash; by far. Nevertheless,
+as is the case with every tool, WISECONDOR has limitations of its own: the Stouffer's z-score approach is error-prone when
 dealing with large amounts of aberrations, the algorithm is extremely slow (24h) when using small bin sizes (15 kb) and
-sex chromosomes are not included in the analysis. Here, I present wisecondorX, an evolved wisecondor that aims at dealing with
+sex chromosomes are not included in the analysis. Here, I present wisecondorX, an evolved WISECONDOR that aims at dealing with
 previous difficulties. Main adaptations include the additional (and consistent) analysis of the X and Y chromosomes,
-a CBS-based segmentation technique and a custom plotter, resulting in overall better results and significantly lower computing times.
-WisecondorX should be applicable not only to NIPT, but also PGD, FFPE, LQB, ... etc.
+a CBS-based segmentation technique and a custom plotter, resulting in overall superior results and significantly lower computing times,
+allowing daily diagnostic use. WisecondorX should be applicable not only to NIPT, but also to PGD, FFPE, LQB, ... etc.
 
 # Manual
 
@@ -20,7 +20,7 @@ There are three main stages for using wisecondorX:
         normalize the X and/or Y chromosome.  
         - When the female reference is given to the [`predict`](#stage-3-predict-cnas) function, chromosome X will be analysed;
         when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case,
-        although I would **not** advice to use a male reference and a female test case, or vice versa &mdash; this because numerous Y reads
+        although I would **not** advice to use a female reference and a male test case, or vice versa &mdash; this because numerous Y reads
         wrongly map the X chromosome. Using a matching reference, the latter is accounted for.
         - For NIPT, exclusively a female reference should be created. This implies that for NIPT, wisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
@@ -44,7 +44,7 @@ There are three main stages for using wisecondorX:
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/convert.sh`
 
-##### Alternatively, convert (old) wisecondor .npz to wisecondorX .npz
+##### Alternatively, convert (old) WISECONDOR .npz to wisecondorX .npz
 
 `python2 wisecondorX.py reformat input.npz output.npz`
 
@@ -76,7 +76,7 @@ There are three main stages for using wisecondorX:
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
 :--- | :---  
 `-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
-`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=5)  
+`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=4)  
 `-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
 `-json` | Outputs .json file, containing all output information  **(\*)**
@@ -99,27 +99,33 @@ reference bin size lower than 15 kb is not advisable, unless a higher sequencing
 WisecondorX will call segments, but will not call 'true aberrations'. I believe there are too many parameters, such as tumor content 
 (LQB, FFPE, ...), fetal content (NIPT), sequencing depth, number of tests, p-value cut-off, ... etc, to reliably and automatically call an aberration
 (with sWGS input, at least). Users can always exploit the "cbs_calls" **(\*)** and/or the "results_r" **(\*\*)** .json keys of `wisecondorX.py predict`'s
-output to program a personal solution.  
+output to program a personal solution. If automation is required, a simple log2-ratio cut-off on the segments output, optimized
+for your type of analysis, often returns the best results.
   
 <sup>**(\*)** Total collection of segments structured as \[chr, start index, end index, BM-score (median of bin wise z-scores of the segment), log2-ratio\]</sup>  
 <sup>**(\*\*)** Total collection of bin wise log2-ratio's</sup>  
 
 # Underlying algorithm
 
-To understand the underlying algorithm, I highly recommend reading [Straver et al (2014)](https://www.ncbi.nlm.nih.gov/pubmed/24170809).
-Some minor adaptations to this algorithm have been made, e.g. additional median centering and variance stabilization (log2) on final ratios, removal of
-less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, and &mdash; last but not least &mdash;
+To understand the underlying algorithm, I highly recommend reading [Straver et al (2014)](https://www.ncbi.nlm.nih.gov/pubmed/24170809); and its
+update shortly introduced in [Huijsdens-van Amsterdam et al (2018)](https://www.nature.com/articles/gim201832.epdf).
+Some adaptations to this algorithm have been made, e.g. additional median centering and variance stabilization (log2) on final ratios, removal of
+less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, inclusion of CBS and plot codes, and &mdash; last but not least &mdash;
 restrictions on within-sample referencing:  
 
 ![Alt text](./figures/within-sample-normalization.png?raw=true "Within-sample normalization in wisecondorX")
 
-# Additional dependencies
+# Dependencies
 
-- R version 3.3 or higher
-- R packages
+- R (v3.4) packages
     - jsonlite (v1.5)
     - png (v0.1-7)
-- R Bioconductor packages
+- R Bioconductor (v3.5) packages
     - DNAcopy (v1.50.1)
+- Python (v2.7) libraries
+	- scipy (v1.0.0)
+    - scikit-learn (v0.19.1)
+    - pysam (v0.13)
+    - numpy (v1.13.3)
 
-And of course, other versions might work as well.  
+And of course, other versions are very likely to work as well.  
