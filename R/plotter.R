@@ -189,7 +189,7 @@ box("figure", lwd = 1)
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
 boxplot(box.list[1:22], ylim=c(min(l.whis.per.chr[1:22]), max(h.whis.per.chr[1:22])), bg=black, 
-        axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
+        axes=F, outpch = 16, ylab = expression('log'[2]*'(ratio)'))
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:22, labels=labels[1:22], tick = F, cex.lab = 3)
@@ -203,7 +203,7 @@ if (plot.constitutionals){
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
 boxplot(box.list[23:length(chrs)], ylim=c(min(l.whis.per.chr[23:length(chrs)]), max(h.whis.per.chr[23:length(chrs)])), 
-        bg=black, axes=F, outpch = 16, ylab = expression('Ratio (log'[2]*')'))
+        bg=black, axes=F, outpch = 16, ylab = expression('log'[2]*'(ratio)'))
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:(length(chrs) - 22), labels=labels[23:length(chrs)], tick = F, cex.lab = 3)
@@ -252,7 +252,7 @@ for (c in chrs){
   par(new = T)
   
   plot(ratio, main = labels[c], axes=F,
-       xlab="", ylab=expression('Ratio (log'[2]*')'), col = black, pch = 21, 
+       xlab="", ylab=expression('log'[2]*'(ratio)'), col = black, pch = 21, 
        cex = 0.4, ylim=c(lower.limit,upper.limit),
        xlim = margins, bg=black)
 
