@@ -184,7 +184,7 @@ def toolTest(args):
 
 	if not args.json and not args.bed and not args.plot:
 		print "ERROR: No output format selected"
-		print "Select at least one of the supported output formats (-json, -txt, -plot)"
+		print "Select at least one of the supported output formats (-json, -bed, -plot)"
 		exit(1)
 
 	# Reference data handling
