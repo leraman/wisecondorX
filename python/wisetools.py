@@ -502,17 +502,20 @@ def generateTxtOuts(args, binsize, json_out):
 			chr = "X"
 		if chr == "24":
 			chr = "Y"
-		chrom_ratio_mean = np.mean(resultsR[chr_i])
-		chrom_ratio_median = np.median(resultsR[chr_i])
+		R = [x for x in resultsR[chr_i] if x != 0]
+		Z = [x for x in json_out["results_z"][chr_i] if x != 0]
 
-		chrom_z_mean = np.mean(json_out["results_z"][chr_i])
-		chrom_z_median = np.median(json_out["results_z"][chr_i])
+		chrom_ratio_mean = np.mean(R)
+		chrom_ratio_median = np.median(R)
+		chrom_z_mean = np.mean(Z)
+		chrom_z_median = np.median(Z)
+
 		statistics_file.write("chr" + str(chr) + " " + str(chrom_ratio_mean) + " " + str(chrom_ratio_median) +
 							  " " + str(chrom_z_mean) + " " + str(chrom_z_median) + "\n")
 		chrom_scores.append(chrom_ratio_mean)
 
 	statistics_file.write("Standard deviation of mean chromosomal ratios: " + str(np.std(chrom_scores)) + "\n")
-	statistics_file.write("Median of all within-segment variances: " + str(getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
+	statistics_file.write("Median of all within-segment ratio variances: " + str(getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
 	statistics_file.close()
 
 def getMedianWithinSegmentVariance(segments, binratios):
@@ -520,8 +523,9 @@ def getMedianWithinSegmentVariance(segments, binratios):
 	for segment in segments:
 		segmentRatios = binratios[int(segment[0]) - 1][int(segment[1]):int(segment[2])]
 		segmentRatios = [x for x in segmentRatios if x != 0]
-		var = np.var(segmentRatios)
-		vars.append(var)
+		if segmentRatios != []:
+			var = np.var(segmentRatios)
+			vars.append(var)
 	return np.median(vars)
 
 
