@@ -228,7 +228,7 @@ def toolTest(args):
 	optimalCutoff, cutOffMask = getOptimalCutoff(distances, args.maskrepeats)
 
 	num_tests = sum(masked_sizes)
-	z_threshold = norm.ppf(1 - 1. / (num_tests * 0.5))
+	z_threshold = norm.ppf(1 - 1. / (num_tests * 0.1))
 
 	print 'Per bin z-score threshold for first testing cycles:', z_threshold
 
