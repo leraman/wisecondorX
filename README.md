@@ -80,7 +80,7 @@ There are three main stages for using wisecondorX:
 `-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
 `-beta x` | Number between 0 and 0.5, defines the trade-off between sensitivity and specificity for aberration calling. If e.g. beta=0.1, ratios between 0.95 and 1.05 (1.05 - 0.95 = 0.1) are seen as non-aberrant (default: x=0.05)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
-`-bed` | Outputs tab-delimited .bed files (healthy male example at `./example.plot`), containing all necessary information  **(\*)**
+`-bed` | Outputs tab-delimited .bed files (healthy male example at `./example.bed`), containing all necessary information  **(\*)**
 `-plot` | Outputs custom .png plots (healthy male example at `./example.plot`), directly interpretable  **(\*)**  
 
 <sup>**(\*)** At least one of these output formats should be selected</sup>  
