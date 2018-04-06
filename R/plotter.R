@@ -8,6 +8,7 @@ arguments = "
 
 --infile          - (mandatory argument) input .json
 --sexchroms       - (mandatory argument) which sex chromosomes will be analyzed? (X or XY)
+--beta            - (mandatory argument) which sex chromosomes will be analyzed? (X or XY)
 --outdir          - (mandatory argument) output folder
 
 "
@@ -20,6 +21,7 @@ args <- as.matrix(do.call("rbind", parseArgs(args)))
 
 in.file <- paste0(args[,1][which(args[,1] == "infile")+1])
 sex.chrom <- paste0(args[,1][which(args[,1] == "sexchroms")+1])
+beta <- paste0(args[,1][which(args[,1] == "beta")+1])
 out.dir <- paste0(args[,1][which(args[,1] == "outdir")+1])
 
 # -----
@@ -33,6 +35,9 @@ if (sex.chrom == "X"){
 }
 
 plot.constitutionals <- T
+
+gain.cut <- log2(1 + as.numeric(beta) / 2)
+del.cut <- log2(1 - as.numeric(beta) / 2)
 
 # -----
 # lib
@@ -108,10 +113,10 @@ chr.wide.lower.limit <- min(-0.8, min(l.whis.per.chr)) * 1.25
 black = "#3f3f3f"
 lighter.grey = "#e0e0e0"
 darker.grey = "#9e9e9e"
-green = "#03bf2e"
+green = "#00a024"
 orange = "#cc8c0c"
 red = "#d10606"
-yellow = "#cdd106"
+blue = "#3f60a0"
 
 png(paste0(out.dir, "/chromosomeWide.png"), width=14,height=10,units="in",res=512)
 
@@ -133,9 +138,26 @@ for (undetectable.index in which(is.na(ratio))){
 }
 par(new = T)
 
+dot.cols = rep(black, length(ratio))
+for (ab in input$cbs_calls){
+  info = unlist(ab)
+  chr = as.integer(info[1])
+  if (chr %in% exclude.chr){
+    next
+  }
+  start = as.integer(info[2]) + chr.end.pos[chr]
+  end = as.integer(info[3]) + chr.end.pos[chr]
+  height = as.double(info[5])
+  if (height > gain.cut){
+    dot.cols[start:end] = blue
+  }
+  if (height < del.cut){
+    dot.cols[start:end] = red
+  }
+}
 plot(ratio, main = "", axes=F,
-     xlab="", ylab=expression('log'[2]*'(ratio)'), col = black, pch = 21, 
-     cex = 0.4, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg=black)
+     xlab="", ylab=expression('log'[2]*'(ratio)'), col = dot.cols, pch = 21, 
+     cex = 0.4, ylim=c(chr.wide.lower.limit,chr.wide.upper.limit), bg = dot.cols)
 
 axis(1, at=mid.chr, labels=labels, tick = F, cex.lab = 3)
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
@@ -144,11 +166,11 @@ genome.len <-  chr.end.pos[chrs[length(chrs)] + 1]
 segments(0 - genome.len * 0.025, 0, genome.len + genome.len * 0.025, 0, col=orange, lwd = 1, lty = 3)
 if (plot.constitutionals){
   segments(0 - genome.len * 0.025, -1, genome.len + genome.len * 0.025, -1, col=red, lwd = 1, lty = 3)
-  segments(0 - genome.len * 0.025, 0.58, genome.len + genome.len * 0.025, 0.58, col=yellow, lwd = 1, lty = 3)
+  segments(0 - genome.len * 0.025, 0.58, genome.len + genome.len * 0.025, 0.58, col=blue, lwd = 1, lty = 3)
 }
 
 for (x in chr.end.pos){
-  segments(x, chr.wide.lower.limit, x, chr.wide.upper.limit, col=green, lwd = 1, lty = 3)
+  segments(x, chr.wide.lower.limit * 1.03, x, chr.wide.upper.limit * 1.03, col=green, lwd = 1.2, lty = 3)
 }
 
 par(xpd=TRUE)
@@ -157,14 +179,14 @@ if (plot.constitutionals){
   legend(x=chr.end.pos[length(chr.end.pos)] * 0.2, 
          y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15, 
          legend = c("Constitutional triploid", "Constitutional diploid", "Constitutional monoploid"),
-         text.col = c(yellow, orange, red), cex = 1.3, bty="n", text.font = 1.8, lty = c(3,3,3),
-         col = c(yellow, orange, red))
+         text.col = c(blue, orange, red), cex = 1.3, bty="n", text.font = 1.8, lty = c(3,3,3),
+         col = c(blue, orange, red))
 }
 
 legend(x=0,
        y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15,
-       legend = c("CBS segment", "Unreliable region", paste0("Number of reads: ", nreads)), text.col = c(green, darker.grey, black),
-       cex = 1.3, bty="n", text.font = 1.8, lty = c(1,1,0), col = c(green, darker.grey, black))
+       legend = c("Gain", "Loss (or monoploid)", paste0("Number of reads: ", nreads)), text.col = c(blue, red, black),
+       cex = 1.3, bty="n", text.font = 1.8, pch = c(16,16), col = c(blue, red, "white"))
 par(xpd=FALSE)
 
 # plot segmentation
@@ -179,7 +201,7 @@ for (ab in input$cbs_calls){
   end = as.integer(info[3]) + chr.end.pos[chr]
   bm.score = abs(as.double(info[4]))
   height = as.double(info[5])
-  segments(start, height, end, height, col=green, lwd = 2, lty = 1)
+  segments(start, height, end, height, col=lighter.grey, lwd = 2, lty = 1)
 }
 
 box("figure", lwd = 1)
@@ -197,7 +219,7 @@ axis(1, at=1:22, labels=labels[1:22], tick = F, cex.lab = 3)
 segments(0, 0, length(chrs[1:22]) + 1, 0, col=orange, lwd = 2, lty = 3)
 if (plot.constitutionals){
   segments(0, -1, length(chrs[1:22]) + 1, -1, col=red, lwd = 2, lty = 3)
-  segments(0, 0.58, length(chrs[1:22]) + 1, 0.58, col=yellow, lwd = 2, lty = 3)
+  segments(0, 0.58, length(chrs[1:22]) + 1, 0.58, col=blue, lwd = 2, lty = 3)
 }
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
@@ -211,7 +233,7 @@ axis(1, at=1:(length(chrs) - 22), labels=labels[23:length(chrs)], tick = F, cex.
 segments(0.6, 0, length(chrs[23:length(chrs)]) + 1, 0, col=orange, lwd = 2, lty = 3)
 if (plot.constitutionals){
   segments(0.6, -1, length(chrs[23:length(chrs)]) + 1, -1, col=red, lwd = 2, lty = 3)
-  segments(0.6, 0.58, length(chrs[23:length(chrs)]) + 1, 0.58, col=yellow, lwd = 2, lty = 3)
+  segments(0.6, 0.58, length(chrs[23:length(chrs)]) + 1, 0.58, col=blue, lwd = 2, lty = 3)
 }
 
 box("outer", lwd = 4)
@@ -252,9 +274,9 @@ for (c in chrs){
   par(new = T)
   
   plot(ratio, main = labels[c], axes=F,
-       xlab="", ylab=expression('log'[2]*'(ratio)'), col = black, pch = 21, 
+       xlab="", ylab=expression('log'[2]*'(ratio)'), col = dot.cols, pch = 21, 
        cex = 0.4, ylim=c(lower.limit,upper.limit),
-       xlim = margins, bg=black)
+       xlim = margins, bg=dot.cols)
 
   for (ab in input$cbs_calls){
     info = unlist(ab)
@@ -266,7 +288,7 @@ for (c in chrs){
     end = as.integer(info[3]) + chr.end.pos[chr]
     bm.score = abs(as.double(info[4]))
     height = as.double(info[5])
-    segments(start, height, end, height, col=green, lwd = 2, lty = 1)
+    segments(start, height, end, height, col=lighter.grey, lwd = 2, lty = 1)
   }
 
   rect(0, lower.limit - 10, chr.end.pos[c], upper.limit + 10, col="white", border=NA)
@@ -278,14 +300,14 @@ for (c in chrs){
   segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, 0, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, 0, col=orange, lwd = 1, lty = 3)
   if (plot.constitutionals){
     segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, -1, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, -1, col=red, lwd = 1, lty = 3)
-    segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, 0.58, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, 0.58, col=yellow, lwd = 1, lty = 3)
+    segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, 0.58, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, 0.58, col=blue, lwd = 1, lty = 3)
   }
   
   for (x in chr.end.pos){
-    segments(x, lower.limit, x, upper.limit, col=green, lwd = 2, lty = 3)
+    segments(x, lower.limit * 1.03, x, upper.limit * 1.03, col=green, lwd = 2, lty = 3)
   }
   for (x in x.labels.at){
-    segments(x, lower.limit, x, upper.limit, col=green, lwd = 1, lty = 3)
+    segments(x, lower.limit * 1.02, x, upper.limit * 1.02, col=green, lwd = 1, lty = 3)
   }
   invisible(dev.off())
 }

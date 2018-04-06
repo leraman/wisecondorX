@@ -182,10 +182,18 @@ def toolTest(args):
 	start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
 				  time_at_start.hour, time_at_start.minute, time_at_start.second]
 
-	if not args.json and not args.bed and not args.plot:
+	if not args.bed and not args.plot:
 		print "ERROR: No output format selected"
-		print "Select at least one of the supported output formats (-json, -bed, -plot)"
+		print "Select at least one of the supported output formats (-bed, -plot)"
 		exit(1)
+
+	if args.beta <= 0 or args.beta > 0.5:
+		print "ERROR: Parameter beta should be a strictly positive number lower than 0.5"
+		exit(1)
+
+	if args.beta < 0.02:
+		print "WARNING: Parameter beta seems to be a bit low."
+		print "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?"
 
 	# Reference data handling
 	mask_list = []
@@ -264,7 +272,7 @@ def toolTest(args):
 			if not np.isfinite(rR):
 				resultsZ[c][i] = 0 # 0 -> result not found; translated to NA in R
 
-	cbs_calls = CBS(args, resultsR, gender, WC_dir)
+	cbs_calls = CBS(args, resultsR, resultsZ, gender, WC_dir)
 
 	time_at_end = datetime.datetime.now()
 	end_time = [time_at_end.year, time_at_end.month, time_at_end.day,
@@ -280,26 +288,25 @@ def toolTest(args):
 				'runtime': [start_time, end_time],
 				'cbs_calls': cbs_calls}
 
-	json_file = open(args.outid + ".json", "w")
-	json.dump(json_out, json_file)
-	json_file.close()
-
 	# Save txt: optional
 	if args.bed:
 		generateTxtOuts(args, binsize, json_out)
 
 	# Create plots: optional
 	if args.plot:
+		json_file = open(args.outid + "_plot_tmp.json", "w")
+		json.dump(json_out, json_file)
+		json_file.close()
+
 		plot_script = str(os.path.dirname(WC_dir)) + "/R/plotter.R"
 		if gender == "M":
 			sexchrom = "XY"
 		else:
 			sexchrom = "X"
-		os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + ".json\" --outdir \"" +
-				 args.outid + ".plots\"" + " --sexchroms " + sexchrom)
+		os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + "_plot_tmp.json\" --outdir \"" +
+				 args.outid + ".plots\"" + " --sexchroms " + sexchrom + " --beta " + str(args.beta))
 
-	if not args.json:
-		os.remove(args.outid + ".json")
+		os.remove(args.outid + "_plot_tmp.json")
 
 	print("Done!")
 	exit(0)
@@ -420,12 +427,13 @@ def main():
 	parser_test.add_argument('-alpha',
 		type=float, default=1e-4,
 		help='P-value cut-off for calling a CBS breakpoint')
+	parser_test.add_argument('-beta',
+		type=float, default=0.05,
+		help='Number between 0 and 0.5, defines the sensitivity for aberration calling. '
+			 'e.g. 0.05 -- ratios between 0.95 and 1.05 are seen as non-aberrant')
 	parser_test.add_argument('-blacklist',type=str, default=None,
 		help='Blacklist that masks regions in output, structure of header-less '
 		     'file: chrX(/t)startpos(/t)endpos(/n)')
-	parser_test.add_argument('-json',
-		action="store_true",
-		help='Outputs .json file, containing all generated information')
 	parser_test.add_argument('-bed',
 		action="store_true",
 		help='Outputs tab-delimited .bed files, containing the most important information')

@@ -78,9 +78,9 @@ There are three main stages for using wisecondorX:
 `-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
 `-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=4)  
 `-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
+`-beta x` | Number between 0 and 0.5, defines the trade-off between sensitivity and specificity for aberration calling. If e.g. beta=0.1, ratios between 0.95 and 1.05 (1.05 - 0.95 = 0.1) are seen as non-aberrant (default: x=0.05)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
-`-json` | Outputs .json file, containing all output information  **(\*)**
-`-bed` | Outputs tab-delimited .bed files, containing most import information  **(\*)**
+`-bed` | Outputs tab-delimited .bed files, containing necessary information  **(\*)**
 `-plot` | Outputs custom .png plots (healthy male example at `./example.plots`), directly interpretable  **(\*)**  
 
 <sup>**(\*)** At least one of these output formats should be selected</sup>  
@@ -92,18 +92,13 @@ There are three main stages for using wisecondorX:
 The default parameters are optimized for shallow whole-genome sequencing data (0.1x - 1x depth; sWGS) and reference bin sizes 
 ranging from 50 to 200 kb. When increasing the reference bin size (`-binsize`), I recommend lowering the reference locations 
 per target (`-refsize`) and the minimum amount of sensible reference bins per target bin (`-minrefbins`). Further note that a
-reference bin size lower than 15 kb is not advisable, unless a higher sequencing depth was used.
-
-# Calling an aberration
-
-WisecondorX will call segments, but will not call 'true aberrations'. I believe there are too many parameters, such as tumor content 
-(LQB, FFPE, ...), fetal content (NIPT), sequencing depth, number of tests, p-value cut-off, ... etc, to reliably and automatically call an aberration
-(with sWGS input, at least). Users can always exploit the "cbs_calls" **(\*)** and/or the "results_r" **(\*\*)** .json keys of `wisecondorX.py predict`'s
-output to program a personal solution. If automation is required, a simple log2-ratio cut-off on the segments output, optimized
-for your type of analysis, often returns the best results.
-  
-<sup>**(\*)** Total collection of segments structured as \[chr, start index, end index, BM-score (median of bin wise z-scores of the segment), log2-ratio\]</sup>  
-<sup>**(\*\*)** Total collection of bin wise log2-ratio's</sup>  
+reference bin size lower than 15 kb is not advisable, unless a higher sequencing depth was used.  
+**Important note**  
+Concerning the vast majority of applications, the `-alpha` parameter should not be tweaked. The `-beta` parameter on the contrary
+should depend on your type of analysis. For NIPT, its default value should be fine. However, for gDNA, when mosaicisms are of no interest,
+it could be increased to its maximum, being 0.5. When the fetal (NIPT) or tumor (fresh material, FFPE, ...) fraction is known, this parameter is optimally
+close to the fraction / 2. If you have any doubts about this argument, a default `-beta` should still be fine when a good and large reference set was created,
+irrespective the type of analysis.  
 
 # Underlying algorithm
 

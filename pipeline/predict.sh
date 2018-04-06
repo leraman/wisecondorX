@@ -17,7 +17,7 @@ OUTPUT_DIR="path/to/predict.output" # existing output folder
 
 # OPTIONAL PARAMETERS
 
-OPT="-plot -txt -json" # all output formats
+OPT="-plot -bed"
 
 # SCRIPT
 

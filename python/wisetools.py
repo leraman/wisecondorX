@@ -480,7 +480,9 @@ def generateTxtOuts(args, binsize, json_out):
 	bed_file.close()
 
 	segments_file = open(args.outid + "_segments.bed","w")
+	ab_file = open(args.outid + "_aberrations.bed","w")
 	segments_file.write("chr\tstart\tend\tratio\n")
+	ab_file.write("chr\tstart\tend\tratio\ttype\n")
 	segments = json_out["cbs_calls"]
 	for segment in segments:
 		chr = str(int(segment[0]))
@@ -491,6 +493,11 @@ def generateTxtOuts(args, binsize, json_out):
 		it = [chr, int(segment[1] * binsize + 1), int((segment[2] + 1) * binsize), segment[4]]
 		it = [str(x) for x in it]
 		segments_file.write("\t".join(it) + "\n")
+		if float(segment[4]) > np.log2(1 + args.beta / 2):
+			ab_file.write("\t".join(it) + "\tgain\n")
+		elif float(segment[4]) < np.log2(1 - args.beta / 2):
+			ab_file.write("\t".join(it) + "\tloss\n")
+
 	segments_file.close()
 
 	statistics_file = open(args.outid + "_statistics.txt","w")
@@ -510,7 +517,7 @@ def generateTxtOuts(args, binsize, json_out):
 		chrom_z_mean = np.mean(Z)
 		chrom_z_median = np.median(Z)
 
-		statistics_file.write("chr" + str(chr) + " " + str(chrom_ratio_mean) + " " + str(chrom_ratio_median) +
+		statistics_file.write(str(chr) + " " + str(chrom_ratio_mean) + " " + str(chrom_ratio_median) +
 							  " " + str(chrom_z_mean) + " " + str(chrom_z_median) + "\n")
 		chrom_scores.append(chrom_ratio_mean)
 
@@ -553,7 +560,7 @@ def applyBlacklist(args, binsize, resultsR, resultsZ, sample, gender):
 				sample[chr][pos] = 0
 
 
-def CBS(args, resultsR, gender, WC_dir):
+def CBS(args, resultsR, resultsZ, gender, WC_dir):
 	json_cbs_temp_dir = os.path.abspath(args.outid + "_CBS_tmp")
 	json_cbs_file = open(json_cbs_temp_dir + "_01.json", "w")
 	json.dump({"results_r": resultsR}, json_cbs_file)
@@ -579,7 +586,10 @@ def CBS(args, resultsR, gender, WC_dir):
 		start = int(cbs_data[1][cbs_call_index]) - 1
 		end = int(cbs_data[2][cbs_call_index])  # no - 1! (closed interval in python)
 
-		BM_score = np.median(resultsR[chr_i][start:end])
+		Z_segment = resultsZ[chr_i][start:end]
+		Z_segment = [x for x in Z_segment if x != 0]
+
+		BM_score = np.median(Z_segment) * 2
 		if math.isnan(BM_score):
 			BM_score = 0.0
 		BM_scores.append(BM_score)
