@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# Copyright (C) 2016 VU University Medical Center Amsterdam
-# Author: Roy Straver (github.com/rstraver)
-#
-# This file is part of WISECONDOR
-# WISECONDOR is distributed under the following license:
-# Attribution-NonCommercial-ShareAlike, CC BY-NC-SA (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
-# This license is governed by Dutch law and this license is subject to the exclusive jurisdiction of the courts of the Netherlands.
-
 import argparse
 import sys
 from scipy.stats import norm
@@ -75,8 +66,6 @@ def toolNewrefPrep(args):
 		print 'Loading:', infile,
 		npzdata = np.load(infile)
 		sample = npzdata['sample'].item()
-		if args.gender == "M":
-			sample = normalizeRefMale(sample)
 		print ' \tbinsize:', int(npzdata['arguments'].item()['binsize'])
 		samples.append(scaleSample(sample, npzdata['arguments'].item()['binsize'], args.binsize))
 		nreads.append(sum([sum(sample[x]) for x in sample.keys()]))
@@ -229,7 +218,6 @@ def toolTest(args):
 
 	num_tests = sum(masked_sizes)
 	z_threshold = norm.ppf(1 - 1. / (num_tests * 0.1))
-
 	print 'Per bin z-score threshold for first testing cycles:', z_threshold
 
 	testCopy = np.copy(testData)
@@ -248,12 +236,20 @@ def toolTest(args):
 	resultsZ = []
 	resultsR = []
 	inflatedZ = inflateArrayMulti(cleanedZ, mask_list)
-	inflatedR = inflateArrayMulti(np.log2(cleanedR) - np.median(np.log2(cleanedR)), mask_list)
+	inflatedR = inflateArrayMulti(cleanedR, mask_list)
 	for chrom in xrange(len(chromosome_sizes)):
 		chromData = inflatedZ[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
 		resultsZ.append(chromData)
 		chromData = inflatedR[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
 		resultsR.append(chromData)
+
+	# log2 & median centering
+	autosomesR = []
+	for chrom in xrange(22):
+		autosomesR.extend(resultsR[chrom])
+	mR = np.median(np.log2([x for x in autosomesR if x != 0]))
+	for chrom in xrange(len(chromosome_sizes)):
+		resultsR[chrom] = np.log2(resultsR[chrom]) - mR
 
 	# Apply blacklist
 	if args.blacklist != None:
@@ -332,9 +328,9 @@ def get_gender(args):
 	Y = float(np.sum(sample["24"]))
 	permilleY = Y / (nonY + Y) * 1000.0
 	if permilleY > args.cutoff:
-		print("Gender = M")
+		print("Male")
 	else:
-		print("Gender = F")
+		print("Female")
 	exit(1)
 
 

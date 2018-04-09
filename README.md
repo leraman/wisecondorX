@@ -20,7 +20,7 @@ There are three main stages for using wisecondorX:
         normalize the X and/or Y chromosome.  
         - When the female reference is given to the [`predict`](#stage-3-predict-cnas) function, chromosome X will be analysed;
         when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case,
-        although I would **not** advice to use a female reference and a male test case, or vice versa &mdash; this because numerous Y reads
+        although I would **never** advice to use a female reference and a male test case, or vice versa &mdash; this because numerous Y reads
         wrongly map the X chromosome. Using a matching reference, the latter is accounted for.
         - For NIPT, exclusively a female reference should be created. This implies that for NIPT, wisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
@@ -80,8 +80,8 @@ There are three main stages for using wisecondorX:
 `-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
 `-beta x` | Number between 0 and 0.5, defines the trade-off between sensitivity and specificity for aberration calling. If e.g. beta=0.1, ratios between 0.95 and 1.05 (1.05 - 0.95 = 0.1) are seen as non-aberrant (default: x=0.05)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
-`-bed` | Outputs tab-delimited .bed files (healthy male example at `./example.bed`), containing all necessary information  **(\*)**
-`-plot` | Outputs custom .png plots (healthy male example at `./example.plot`), directly interpretable  **(\*)**  
+`-bed` | Outputs tab-delimited .bed files (trisomy 21 NIPT example at `./example.bed`), containing all necessary information  **(\*)**
+`-plot` | Outputs custom .png plots (trisomy 21 NIPT example at `./example.plot`), directly interpretable  **(\*)**  
 
 <sup>**(\*)** At least one of these output formats should be selected</sup>  
 

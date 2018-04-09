@@ -1,11 +1,3 @@
-# Copyright (C) 2016 VU University Medical Center Amsterdam
-# Author: Roy Straver (github.com/rstraver)
-#
-# This file is part of WISECONDOR
-# WISECONDOR is distributed under the following license:
-# Attribution-NonCommercial-ShareAlike, CC BY-NC-SA (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
-# This license is governed by Dutch law and this license is subject to the exclusive jurisdiction of the courts of the Netherlands.
-
 import time
 import bisect
 from sklearn.decomposition import PCA
@@ -353,12 +345,6 @@ def getPart(partnum, outof, bincount):
 	startBin = int(bincount / float(outof) * partnum)
 	endBin = int(bincount / float(outof) * (partnum + 1))
 	return startBin, endBin
-
-def normalizeRefMale(sample):
-	sexChrs = ["23", "24"]
-	for sexChr in sexChrs:
-		sample[sexChr] = sample[sexChr] * 2
-	return sample
 
 def getReference(correctedData, chromosomeBins, chromosomeBinSums, gender, selectRefAmount=100, part=1, splitParts=1):
 	timeStartSelection = time.time()

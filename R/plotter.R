@@ -34,8 +34,6 @@ if (sex.chrom == "X"){
   exclude.chr = c()
 }
 
-plot.constitutionals <- T
-
 gain.cut <- log2(1 + as.numeric(beta) / 2)
 del.cut <- log2(1 - as.numeric(beta) / 2)
 
@@ -105,8 +103,8 @@ for (chr in chrs){
   h.whis.per.chr = c(h.whis.per.chr, whis[2])
 }
 
-chr.wide.upper.limit <- max(0.8, max(h.whis.per.chr)) * 1.25
-chr.wide.lower.limit <- min(-0.8, min(l.whis.per.chr)) * 1.25
+chr.wide.upper.limit <- max(0.65, max(h.whis.per.chr)) * 1.25
+chr.wide.lower.limit <- min(-0.95, min(l.whis.per.chr)) * 1.25
 
 # plot chromosome wide plot
 
@@ -162,11 +160,19 @@ plot(ratio, main = "", axes=F,
 axis(1, at=mid.chr, labels=labels, tick = F, cex.lab = 3)
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 
-genome.len <-  chr.end.pos[chrs[length(chrs)] + 1]
-segments(0 - genome.len * 0.025, 0, genome.len + genome.len * 0.025, 0, col=orange, lwd = 1, lty = 3)
-if (plot.constitutionals){
-  segments(0 - genome.len * 0.025, -1, genome.len + genome.len * 0.025, -1, col=red, lwd = 1, lty = 3)
-  segments(0 - genome.len * 0.025, 0.58, genome.len + genome.len * 0.025, 0.58, col=blue, lwd = 1, lty = 3)
+plot.constitutionals <- function(ploidy, start, end){
+  segments(start, log2(1/ploidy), end, log2(1/ploidy), col=red, lwd = 2, lty = 3)
+  segments(start, log2(2/ploidy), end, log2(2/ploidy), col=orange, lwd = 2, lty = 3)
+  segments(start, log2(3/ploidy), end, log2(3/ploidy), col=blue, lwd = 2, lty = 3)
+}
+
+genome.len <- chr.end.pos[length(chr.end.pos)]
+autosome.len <- chr.end.pos[23]
+if ((sex.chrom == "X")){
+  plot.constitutionals(2, -genome.len * 0.025, genome.len * 1.025)
+} else {
+  plot.constitutionals(2, -genome.len * 0.025, autosome.len)
+  plot.constitutionals(1, autosome.len, genome.len * 1.025)
 }
 
 for (x in chr.end.pos){
@@ -175,17 +181,15 @@ for (x in chr.end.pos){
 
 par(xpd=TRUE)
 # Legends
-if (plot.constitutionals){
-  legend(x=chr.end.pos[length(chr.end.pos)] * 0.2, 
-         y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15, 
-         legend = c("Constitutional triploid", "Constitutional diploid", "Constitutional monoploid"),
-         text.col = c(blue, orange, red), cex = 1.3, bty="n", text.font = 1.8, lty = c(3,3,3),
-         col = c(blue, orange, red))
-}
+legend(x=chr.end.pos[length(chr.end.pos)] * 0.2, 
+       y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15, 
+       legend = c("Constitutional triploid", "Constitutional diploid", "Constitutional monoploid"),
+       text.col = c(blue, orange, red), cex = 1.3, bty="n", text.font = 1.8, lty = c(3,3,3), lwd = 1.5,
+       col = c(blue, orange, red))
 
 legend(x=0,
        y = chr.wide.upper.limit + (abs(chr.wide.upper.limit) + abs(chr.wide.lower.limit)) * 0.15,
-       legend = c("Gain", "Loss (or monoploid)", paste0("Number of reads: ", nreads)), text.col = c(blue, red, black),
+       legend = c("Gain", "Loss", paste0("Number of reads: ", nreads)), text.col = c(blue, red, black),
        cex = 1.3, bty="n", text.font = 1.8, pch = c(16,16), col = c(blue, red, "white"))
 par(xpd=FALSE)
 
@@ -216,11 +220,7 @@ axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:22, labels=labels[1:22], tick = F, cex.lab = 3)
 
-segments(0, 0, length(chrs[1:22]) + 1, 0, col=orange, lwd = 2, lty = 3)
-if (plot.constitutionals){
-  segments(0, -1, length(chrs[1:22]) + 1, -1, col=red, lwd = 2, lty = 3)
-  segments(0, 0.58, length(chrs[1:22]) + 1, 0.58, col=blue, lwd = 2, lty = 3)
-}
+plot.constitutionals(2, 0, 23)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
@@ -230,11 +230,12 @@ axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
 axis(1, at=1:(length(chrs) - 22), labels=labels[23:length(chrs)], tick = F, cex.lab = 3)
 
-segments(0.6, 0, length(chrs[23:length(chrs)]) + 1, 0, col=orange, lwd = 2, lty = 3)
-if (plot.constitutionals){
-  segments(0.6, -1, length(chrs[23:length(chrs)]) + 1, -1, col=red, lwd = 2, lty = 3)
-  segments(0.6, 0.58, length(chrs[23:length(chrs)]) + 1, 0.58, col=blue, lwd = 2, lty = 3)
+if ((sex.chrom == "X")){
+  plot.constitutionals(2, 0.6, length(chrs[23:length(chrs)]) + 1)
+} else {
+  plot.constitutionals(1, 0.6, length(chrs[23:length(chrs)]) + 1)
 }
+
 
 box("outer", lwd = 4)
 
@@ -258,8 +259,8 @@ for (c in chrs){
   mean = mean(box.list[[c]], na.rm = T)
   whis = boxplot(box.list[[c]], plot = F)$stats[c(1,5),]
   
-  upper.limit <- 0.8 + whis[2]
-  lower.limit <- -0.8 + whis[1]
+  upper.limit <- 0.6 + whis[2]
+  lower.limit <- -1.05 + whis[1]
   
   par(mar = c(4,4,4,0), mgp=c(2.2,-0.2,2))
   
@@ -297,10 +298,14 @@ for (c in chrs){
   axis(1, at=x.labels.at, labels=x.labels, tick = F, cex.axis=0.8)
   axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
   
-  segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, 0, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, 0, col=orange, lwd = 1, lty = 3)
-  if (plot.constitutionals){
-    segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, -1, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, -1, col=red, lwd = 1, lty = 3)
-    segments(chr.end.pos[c] - bins.per.chr[c] * 0.02, 0.58, chr.end.pos[c+1] + bins.per.chr[c] * 0.02, 0.58, col=blue, lwd = 1, lty = 3)
+  if ((sex.chrom == "X")){
+    plot.constitutionals(2, chr.end.pos[c] - bins.per.chr[c] * 0.02, chr.end.pos[c+1] + bins.per.chr[c] * 0.02)
+  } else {
+    if (c == 23 | c == 24){
+      plot.constitutionals(1, chr.end.pos[c] - bins.per.chr[c] * 0.02, chr.end.pos[c+1] + bins.per.chr[c] * 0.02)
+    } else {
+      plot.constitutionals(2, chr.end.pos[c] - bins.per.chr[c] * 0.02, chr.end.pos[c+1] + bins.per.chr[c] * 0.02)
+    }
   }
   
   for (x in chr.end.pos){
