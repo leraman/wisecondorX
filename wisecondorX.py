@@ -418,7 +418,7 @@ def main():
 		type=int, default=150,
 		help='Minimum amount of sensible reference bins per target bin')
 	parser_test.add_argument('-maskrepeats',
-		type=int, default=4,
+		type=int, default=5,
 		help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles')
 	parser_test.add_argument('-alpha',
 		type=float, default=1e-4,
