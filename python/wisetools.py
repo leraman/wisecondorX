@@ -417,7 +417,7 @@ def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosome
 
 		for index in indexes[start:end]:
 			refData = chromData[index[distances[i] < cutoff]]
-			refData = refData[refData >= 0]  # Previously found aberrations may be marked by negative values
+			refData = refData[refData >= 0]  # Previously found aberrations are marked by negative values
 			refMean = np_mean(refData)
 			refStdDev = np_std(refData)
 			if not np.isnan(refStdDev):
@@ -427,11 +427,11 @@ def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosome
 			resultsR[i] = testData[i] / refMean
 			refSizes[i] = refData.shape[0]
 			i += 1
+
 	return resultsZ, resultsR, refSizes, stdDevSum/stdDevNum
 
 
 def repeatTest(testData, indexes, distances, chromosomeBins, chromosomeBinSums, cutoff, threshold, repeats):
-	timeStartTest = time.time()
 	resultsZ = None
 	resultsR = None
 	testCopy = np.copy(testData)
@@ -439,7 +439,6 @@ def repeatTest(testData, indexes, distances, chromosomeBins, chromosomeBinSums, 
 		resultsZ, resultsR, refSizes, stdDevAvg = trySample(testData, testCopy, indexes, distances, chromosomeBins,
 												  chromosomeBinSums, cutoff)
 		testCopy[np_abs(resultsZ) >= threshold] = -1
-	print 'Time spent on obtaining z-scores:', int(time.time() - timeStartTest), 'seconds'
 	return resultsZ, resultsR, refSizes, stdDevAvg
 
 

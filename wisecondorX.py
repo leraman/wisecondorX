@@ -4,13 +4,16 @@ from scipy.stats import norm
 from python.wisetools import *
 
 def toolConvert(args):
+	print 'Importing data ...'
+	print 'Converting bam ... This might take a a while ...'
 	converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
 	np.savez_compressed(args.outfile,
 						arguments=vars(args),
 						runtime=getRuntime(),
 						sample=converted,
 						quality=qual_info)
-	print 'Conversion finished'
+	print 'Done!'
+	exit(0)
 
 
 def toolNewref(args):
@@ -57,11 +60,15 @@ def toolNewref(args):
 	for part in xrange(1, args.parts + 1):
 		os.remove(args.partfile + '_' + str(part) + '.npz')
 
+	print("Done!")
+	exit(0)
+
 
 def toolNewrefPrep(args):
 	samples = []
 	nreads = []
 	binsizes = set()
+	print 'Importing data ...'
 	for infile in args.infiles:  # glob.glob(args.infiles):
 		print 'Loading:', infile,
 		npzdata = np.load(infile)
@@ -114,6 +121,7 @@ def toolNewrefPart(args):
 	maskedChromBins = npzdata['maskedChromBins']
 	maskedChromBinSums = npzdata['maskedChromBinSums']
 
+	print 'Creating reference ... This might take a a while ...'
 	indexes, distances = getReference(correctedData, maskedChromBins, maskedChromBinSums, args.gender,
 										selectRefAmount=args.refsize, part=args.part[0], splitParts=args.part[1])
 
@@ -167,9 +175,15 @@ def toolTest(args):
 
 	WC_dir = os.path.realpath(__file__)
 
+
+
 	time_at_start = datetime.datetime.now()
 	start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
 				  time_at_start.hour, time_at_start.minute, time_at_start.second]
+
+	print 'Importing data ...'
+	referenceFile = np.load(args.reference)
+	sampleFile = np.load(args.infile)
 
 	if not args.bed and not args.plot:
 		print "ERROR: No output format selected"
@@ -186,8 +200,6 @@ def toolTest(args):
 
 	# Reference data handling
 	mask_list = []
-	referenceFile = np.load(args.reference)
-
 	gender = referenceFile['gender']
 
 	binsize = referenceFile['binsize'].item()
@@ -205,9 +217,9 @@ def toolTest(args):
 	del referenceFile
 
 	# Test sample data handling
-	sampleFile = np.load(args.infile)
 	sample = sampleFile['sample'].item()
 
+	print 'Applying between-sample normalization ...'
 	nreads = sum([sum(sample[x]) for x in sample.keys()])
 	sampleBinSize = sampleFile['arguments'].item()['binsize']
 	sample = scaleSample(sample, sampleBinSize, binsize)
@@ -215,15 +227,14 @@ def toolTest(args):
 	testData = toNumpyRefFormat(sample, chromosome_sizes, mask, gender)
 	testData = applyPCA(testData, pca_mean, pca_components)
 	optimalCutoff, cutOffMask = getOptimalCutoff(distances, args.maskrepeats)
+	print(distances)
 
-	num_tests = sum(masked_sizes)
-	z_threshold = norm.ppf(1 - 1. / (num_tests * 0.1))
-	print 'Per bin z-score threshold for first testing cycles:', z_threshold
+	z_threshold = norm.ppf(0.975) # two-tailed test
 
+	print 'Applying within-sample normalization ...'
 	testCopy = np.copy(testData)
 	resultsZ, resultsR, refSizes, stdDevAvg = repeatTest(testCopy, indexes, distances, masked_sizes, maskedChromBinSums,
 														 optimalCutoff, z_threshold, 5)
-	print 'ASDES:', stdDevAvg, '\nAASDEF:', stdDevAvg * z_threshold
 	# Get rid of infinite values caused by having no reference bins or only zeros in the reference
 	infinite_mask = (refSizes >= args.minrefbins)
 	mask_list.append(infinite_mask)
@@ -268,6 +279,7 @@ def toolTest(args):
 			if not np.isfinite(rR):
 				resultsZ[c][i] = 0 # 0 -> result not found; translated to NA in R
 
+	print 'Obtaining CBS segments ...'
 	cbs_calls = CBS(args, resultsR, resultsZ, gender, WC_dir)
 
 	time_at_end = datetime.datetime.now()
@@ -286,10 +298,12 @@ def toolTest(args):
 
 	# Save txt: optional
 	if args.bed:
+		print 'Writing tables ...'
 		generateTxtOuts(args, binsize, json_out)
 
 	# Create plots: optional
 	if args.plot:
+		print 'Writing plots ...'
 		json_file = open(args.outid + "_plot_tmp.json", "w")
 		json.dump(json_out, json_file)
 		json_file.close()
@@ -418,7 +432,7 @@ def main():
 		type=int, default=150,
 		help='Minimum amount of sensible reference bins per target bin')
 	parser_test.add_argument('-maskrepeats',
-		type=int, default=5,
+		type=int, default=4,
 		help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles')
 	parser_test.add_argument('-alpha',
 		type=float, default=1e-4,

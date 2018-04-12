@@ -76,7 +76,7 @@ There are three main stages for using wisecondorX:
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
 :--- | :---  
 `-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
-`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=5)  
+`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=4)  
 `-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
 `-beta x` | Number between 0 and 0.5, defines the trade-off between sensitivity and specificity for aberration calling. If e.g. beta=0.1, ratios between 0.95 and 1.05 (1.05 - 0.95 = 0.1) are seen as non-aberrant (default: x=0.05)  
 `-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
