@@ -5,24 +5,24 @@ After extensively comparing different WGS-based CNA tools, including [WISECONDOR
 WISECONDOR appeared to normalize copy number data in the most consistent way &mdash; by far. Nevertheless,
 as is the case with every tool, WISECONDOR has limitations of its own: the Stouffer's z-score approach is error-prone when
 dealing with large amounts of aberrations, the algorithm is extremely slow (24h) when using small bin sizes (15 kb) and
-sex chromosomes are not included in the analysis. Here, I present wisecondorX, an evolved WISECONDOR that aims at dealing with
+sex chromosomes are not included in the analysis. Here, I present WisecondorX, an evolved WISECONDOR that aims at dealing with
 previous difficulties. Main adaptations include the additional (and consistent) analysis of the X and Y chromosomes,
 a CBS-based segmentation technique and a custom plotter, resulting in overall superior results and significantly lower computing times,
 allowing daily diagnostic use. WisecondorX should be applicable not only to NIPT, but also to PGD, FFPE, LQB, ... etc.
 
 # Manual
 
-There are three main stages for using wisecondorX:
+There are three main stages for using WisecondorX:
 - Converting .bam files to .npz files (both reference and test samples)
 - Creating a reference (using reference .npz files)  
-    - **Important notes:**
+    - **Important notes**
         - Reference samples should be divided in two distinct groups, one for males and one for females. This is required to correctly
         normalize the X and/or Y chromosome.  
         - When the female reference is given to the [`predict`](#stage-3-predict-cnas) function, chromosome X will be analysed;
         when on the other hand the male reference is used, chromosomes X & Y are analysed. This regardless of the gender of the test case,
         although I would **never** advice to use a female reference and a male test case, or vice versa &mdash; this because numerous Y reads
         wrongly map the X chromosome. Using a matching reference, the latter is accounted for.
-        - For NIPT, exclusively a female reference should be created. This implies that for NIPT, wisecondorX is not able
+        - For NIPT, exclusively a female reference should be created. This implies that for NIPT, WisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
         is created using pregnancies of female fetuses only.  
         - It is of paramount importance that the reference set consists of exclusively healthy samples that originate from the same 
@@ -44,7 +44,7 @@ There are three main stages for using wisecondorX:
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/convert.sh`
 
-##### Alternatively, convert (old) WISECONDOR .npz to wisecondorX .npz
+##### Alternatively, convert (old) WISECONDOR .npz to WisecondorX .npz
 
 `python2 wisecondorX.py reformat input.npz output.npz`
 
@@ -61,7 +61,7 @@ There are three main stages for using wisecondorX:
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/newref.sh`
 
-##### When the gender is not known, wisecondorX can predict it
+##### When the gender is not known, WisecondorX can predict it
 
 `python2 wisecondorX.py gender input.npz [-optional arguments]`  
 
@@ -105,10 +105,10 @@ irrespective the type of analysis.
 To understand the underlying algorithm, I highly recommend reading [Straver et al (2014)](https://www.ncbi.nlm.nih.gov/pubmed/24170809); and its
 update shortly introduced in [Huijsdens-van Amsterdam et al (2018)](https://www.nature.com/articles/gim201832.epdf).
 Some adaptations to this algorithm have been made, e.g. additional median centering and variance stabilization (log2) on final ratios, removal of
-less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, inclusion of CBS and plot codes, and &mdash; last but not least &mdash;
-restrictions on within-sample referencing:  
+less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, inclusion of CBS, table and plot codes, and &mdash; last but not least &mdash;
+restrictions on within-sample referencing, an important feature for NIPT:  
 
-![Alt text](./figures/within-sample-normalization.png?raw=true "Within-sample normalization in wisecondorX")
+![Alt text](./figures/within-sample-normalization.png?raw=true "Within-sample normalization in WisecondorX")
 
 # Dependencies
 

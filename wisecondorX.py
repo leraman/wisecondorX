@@ -227,7 +227,6 @@ def toolTest(args):
 	testData = toNumpyRefFormat(sample, chromosome_sizes, mask, gender)
 	testData = applyPCA(testData, pca_mean, pca_components)
 	optimalCutoff, cutOffMask = getOptimalCutoff(distances, args.maskrepeats)
-	print(distances)
 
 	z_threshold = norm.ppf(0.975) # two-tailed test
 
