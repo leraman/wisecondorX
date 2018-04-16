@@ -108,7 +108,7 @@ Some adaptations to this algorithm have been made, e.g. additional median center
 less useful plot and Stouffer's z-score codes, addition of the X and Y chromosomes, inclusion of CBS, table and plot codes, and &mdash; last but not least &mdash;
 restrictions on within-sample referencing, an important feature for NIPT:  
 
-![Alt text](./figures/within-sample-normalization.png?raw=true "Within-sample normalization in WisecondorX")
+![Alt text](./figures/within-sample-normalization-2.png?raw=true "Within-sample normalization in WisecondorX")
 
 # Dependencies
 
