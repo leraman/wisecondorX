@@ -5,7 +5,7 @@ from python.wisetools import *
 
 def toolConvert(args):
 	print 'Importing data ...'
-	print 'Converting bam ... This might take a a while ...'
+	print 'Converting bam ... This might take a while ...'
 	converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
 	np.savez_compressed(args.outfile,
 						arguments=vars(args),
@@ -121,7 +121,7 @@ def toolNewrefPart(args):
 	maskedChromBins = npzdata['maskedChromBins']
 	maskedChromBinSums = npzdata['maskedChromBinSums']
 
-	print 'Creating reference ... This might take a a while ...'
+	print 'Creating reference ... This might take a while ...'
 	indexes, distances = getReference(correctedData, maskedChromBins, maskedChromBinSums, args.gender,
 										selectRefAmount=args.refsize, part=args.part[0], splitParts=args.part[1])
 
