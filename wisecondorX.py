@@ -7,20 +7,8 @@ from python.wisetools import *
 
 
 def toolConvert(args):
-<<<<<<< HEAD
-	print 'Importing data ...'
-	print 'Converting bam ... This might take a while ...'
-	converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
-	np.savez_compressed(args.outfile,
-						arguments=vars(args),
-						runtime=getRuntime(),
-						sample=converted,
-						quality=qual_info)
-	print 'Done!'
-	exit(0)
-=======
     print 'Importing data ...'
-    print 'Converting bam ... This might take a a while ...'
+    print 'Converting bam ... This might take a while ...'
     converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
     np.savez_compressed(args.outfile,
                         arguments=vars(args),
@@ -29,7 +17,6 @@ def toolConvert(args):
                         quality=qual_info)
     print 'Done!'
     exit(0)
->>>>>>> 7f2673fa12ff63bd867ffb4e6f3f644f7ebf821a
 
 
 def toolNewref(args):
@@ -123,30 +110,6 @@ def toolNewrefPrep(args):
 
 
 def toolNewrefPart(args):
-<<<<<<< HEAD
-	if args.part[0] > args.part[1]:
-		print 'ERROR: Part should be smaller or equal to total parts:', args.part[0], '>', args.part[
-			1], 'is wrong'
-		exit(1)
-	if args.part[0] < 0:
-		print 'ERROR: Part should be at least zero:', args.part[0], '<', 0, 'is wrong'
-		exit(1)
-
-	npzdata = np.load(args.prepfile)
-	correctedData = npzdata['correctedData']
-	maskedChromBins = npzdata['maskedChromBins']
-	maskedChromBinSums = npzdata['maskedChromBinSums']
-
-	print 'Creating reference ... This might take a while ...'
-	indexes, distances = getReference(correctedData, maskedChromBins, maskedChromBinSums, args.gender,
-										selectRefAmount=args.refsize, part=args.part[0], splitParts=args.part[1])
-
-	np.savez_compressed(args.partfile + '_' + str(args.part[0]) + '.npz',
-						arguments=vars(args),
-						runtime=getRuntime(),
-						indexes=indexes,
-						distances=distances)
-=======
     if args.part[0] > args.part[1]:
         print 'ERROR: Part should be smaller or equal to total parts:', args.part[0], '>', args.part[
             1], 'is wrong'
@@ -160,7 +123,7 @@ def toolNewrefPart(args):
     maskedChromBins = npzdata['maskedChromBins']
     maskedChromBinSums = npzdata['maskedChromBinSums']
 
-    print 'Creating reference ... This might take a a while ...'
+    print 'Creating reference ... This might take a while ...'
     indexes, distances = getReference(correctedData, maskedChromBins, maskedChromBinSums, args.gender,
                                       selectRefAmount=args.refsize, part=args.part[0], splitParts=args.part[1])
 
@@ -169,8 +132,6 @@ def toolNewrefPart(args):
                         runtime=getRuntime(),
                         indexes=indexes,
                         distances=distances)
->>>>>>> 7f2673fa12ff63bd867ffb4e6f3f644f7ebf821a
-
 
 def toolNewrefPost(args):
     # Load prep file data
