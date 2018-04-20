@@ -464,7 +464,7 @@ def generateTxtOuts(args, binsize, json_out):
             if r == 0:
                 r = "NaN"
             feat_str = chr + ":" + str(feat) + "-" + str(feat + binsize - 1)
-            it = [chr, feat - 1, feat + binsize - 1, feat_str, r]
+            it = [chr, feat, feat + binsize - 1, feat_str, r]
             it = [str(x) for x in it]
             bed_file.write("\t".join(it) + "\n")
             feat += binsize
