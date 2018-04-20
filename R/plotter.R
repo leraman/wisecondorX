@@ -34,8 +34,8 @@ if (sex.chrom == "X"){
   exclude.chr = c()
 }
 
-gain.cut <- log2((2 + as.numeric(beta) / 2) / 2)
-del.cut <- log2((2 - as.numeric(beta) / 2) / 2)
+gain.cut <- log2(1 + as.numeric(beta) / 2)
+del.cut <- log2(1 - as.numeric(beta) / 2)
 
 # -----
 # lib
