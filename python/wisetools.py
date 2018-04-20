@@ -484,9 +484,9 @@ def generateTxtOuts(args, binsize, json_out):
         it = [chr, int(segment[1] * binsize + 1), int((segment[2] + 1) * binsize), segment[4]]
         it = [str(x) for x in it]
         segments_file.write("\t".join(it) + "\n")
-        if float(segment[4]) > np.log2(1. + args.beta / 2):
+        if float(segment[4]) > np.log2(1. + args.beta / 4):
             ab_file.write("\t".join(it) + "\tgain\n")
-        elif float(segment[4]) < np.log2(1. - args.beta / 2):
+        elif float(segment[4]) < np.log2(1. - args.beta / 4):
             ab_file.write("\t".join(it) + "\tloss\n")
 
     segments_file.close()

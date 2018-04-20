@@ -193,7 +193,7 @@ def toolTest(args):
         print "ERROR: Parameter beta should be a strictly positive number lower than 1"
         exit(1)
 
-    if args.beta < 0.025:
+    if args.beta < 0.05:
         print "WARNING: Parameter beta seems to be a bit low."
         print "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?"
 
@@ -433,9 +433,8 @@ def main():
                              type=float, default=1e-4,
                              help='P-value cut-off for calling a CBS breakpoint')
     parser_test.add_argument('-beta',
-                             type=float, default=0.05,
-                             help='Number between 0 and 1, defines the sensitivity for aberration calling. '
-                                  'e.g. 0.1 -- copy numbers between 1.95 and 2.05 are seen as non-aberrant')
+                             type=float, default=0.075,
+                             help='Number between 0 and 1, defines the sensitivity for aberration calling.')
     parser_test.add_argument('-blacklist', type=str, default=None,
                              help='Blacklist that masks regions in output, structure of header-less '
                                   'file: chrX(/t)startpos(/t)endpos(/n)')
