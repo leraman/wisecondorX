@@ -17,10 +17,10 @@ GENDER="F" # gender of the of the cases at NPZ_INPUT_DIR
 
 for REF in ${REF_SIZES}
 do
-    echo "Creating reference at bins size ${REF}"
+    echo "Creating reference at bins size ${REF} kb"
+
+    python2 ${WISECONDORX_DIR}/wisecondorX.py newref ${INPUT_DIR}/*.npz \
+    ${OUTPUT_DIR}/reference.${RELEASE}.${GENDER}.${REF}kb.npz \
+    -binsize ${REF}000 -cpus ${CORES} -gender ${GENDER}
     
-	python2 ${WISECONDORX_DIR}/wisecondorX.py newref \
-	${INPUT_DIR}/*.npz \
-	${OUTPUT_DIR}/reference.${RELEASE}.${GENDER}.${REF}kb.npz \
-	-binsize ${REF}000 -cpus ${CORES} -gender ${GENDER}
 done
