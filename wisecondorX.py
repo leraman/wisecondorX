@@ -189,11 +189,11 @@ def toolTest(args):
         print "Select at least one of the supported output formats (-bed, -plot)"
         exit(1)
 
-    if args.beta <= 0 or args.beta > 0.5:
-        print "ERROR: Parameter beta should be a strictly positive number lower than 0.5"
+    if args.beta <= 0 or args.beta > 1:
+        print "ERROR: Parameter beta should be a strictly positive number lower than 1"
         exit(1)
 
-    if args.beta < 0.02:
+    if args.beta < 0.04:
         print "WARNING: Parameter beta seems to be a bit low."
         print "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?"
 
@@ -252,13 +252,9 @@ def toolTest(args):
         chromData = inflatedR[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
         resultsR.append(chromData)
 
-    # log2 & median centering
-    autosomesR = []
-    for chrom in xrange(22):
-        autosomesR.extend(resultsR[chrom])
-    mR = np.median(np.log2([x for x in autosomesR if x != 0]))
+    # log2
     for chrom in xrange(len(chromosome_sizes)):
-        resultsR[chrom] = np.log2(resultsR[chrom]) - mR
+        resultsR[chrom] = np.log2(resultsR[chrom])
 
     # Apply blacklist
     if args.blacklist != None:
@@ -437,9 +433,9 @@ def main():
                              type=float, default=1e-4,
                              help='P-value cut-off for calling a CBS breakpoint')
     parser_test.add_argument('-beta',
-                             type=float, default=0.05,
-                             help='Number between 0 and 0.5, defines the sensitivity for aberration calling. '
-                                  'e.g. 0.05 -- ratios between 0.95 and 1.05 are seen as non-aberrant')
+                             type=float, default=0.075,
+                             help='Number between 0 and 1, defines the sensitivity for aberration calling. '
+                                  'e.g. 0.1 -- copy numbers between 1.95 and 2.05 are seen as non-aberrant')
     parser_test.add_argument('-blacklist', type=str, default=None,
                              help='Blacklist that masks regions in output, structure of header-less '
                                   'file: chrX(/t)startpos(/t)endpos(/n)')
