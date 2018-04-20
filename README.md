@@ -96,7 +96,7 @@ reference bin size lower than 15 kb is not advisable, unless a higher sequencing
 **Important note**  
 Concerning the vast majority of applications, the `-alpha` parameter should not be tweaked. The `-beta` parameter on the contrary
 should depend on your type of analysis. For NIPT, its default value should be fine. However, for gDNA, when mosaicisms are of no interest,
-it could be increased to its maximum, being 1. When the fetal (NIPT) or tumor (fresh material, FFPE, ...) fraction is known, this parameter is optimally
+it could be increased to its maximum, being 1. When the fetal (NIPT) or tumor (LQB, fresh material, FFPE, ...) fraction is known, this parameter is optimally
 close to this fraction. If you have any doubts about this argument, a default `-beta` should still be fine when a good and large reference set was created,
 irrespective the type of analysis.  
 
