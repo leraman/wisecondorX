@@ -433,7 +433,7 @@ def main():
                              type=float, default=1e-4,
                              help='P-value cut-off for calling a CBS breakpoint')
     parser_test.add_argument('-beta',
-                             type=float, default=0.075,
+                             type=float, default=0.1,
                              help='Number between 0 and 1, defines the sensitivity for aberration calling.')
     parser_test.add_argument('-blacklist', type=str, default=None,
                              help='Blacklist that masks regions in output, structure of header-less '
