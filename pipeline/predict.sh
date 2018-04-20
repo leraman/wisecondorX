@@ -26,6 +26,7 @@ while read LINE; do
     SAMPLE=$(echo $LINE | awk -F ' ' '{print $1}')
     NPZ=$(echo $LINE | awk -F ' ' '{print $2}')
 
+    echo "Predicting sample ${SAMPLE}"
     python2 ${WISECONDORX_DIR}/wisecondorX.py predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
 
 done <${NPZ_FILES}

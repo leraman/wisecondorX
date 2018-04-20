@@ -19,8 +19,7 @@ while read LINE; do
     SAMPLE=$(echo $LINE | awk -F ' ' '{print $1}')
     BAM=$(echo $LINE | awk -F ' ' '{print $2}')
 
-    #Create bins @5kb
-    echo "creating 5kb bins for sample ${SAMPLE}"
+    echo "Creating 5kb bins for sample ${SAMPLE}"
     python2 ${WISECONDORX_DIR}/wisecondorX.py convert ${BAM} ${OUTPUT_DIR}/${SAMPLE}.npz
 
 done < ${BAM_FILES}
