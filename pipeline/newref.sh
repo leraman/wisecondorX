@@ -22,5 +22,4 @@ do
     python2 ${WISECONDORX_DIR}/wisecondorX.py newref ${INPUT_DIR}/*.npz \
     ${OUTPUT_DIR}/reference.${RELEASE}.${GENDER}.${REF}kb.npz \
     -binsize ${REF}000 -cpus ${CORES} -gender ${GENDER}
-    
 done

@@ -12,6 +12,18 @@ allowing daily diagnostic use. WisecondorX should be applicable not only to NIPT
 
 # Manual
 
+## Mapping
+
+We found superior results through WisecondorX when using the following mapping and deduplication strategy.
+
+`bowtie2 --local -p 16 --fast-local -x index -U input | bamsormadup inputformat=sam threads=16 SO=coordinate outputformat=bam indexfilename=sample.bam.bai > sample.bam`
+
+I would recommend using the latest version of the human reference genome (GRCh38). Note that it is very important that **no** read
+quality filtering is executed prior the running WisecondorX: this software requires low-quality reads to distinguish informative
+bins from non-informative ones.
+
+## WisecondorX
+
 There are three main stages for using WisecondorX:
 - Converting .bam files to .npz files (both reference and test samples)
 - Creating a reference (using reference .npz files)  
@@ -67,7 +79,7 @@ There are three main stages for using WisecondorX:
 
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function
 :--- | :---  
-`-cutoff x` | Y-read permille cut-off: above is male, below is female. Note that for NIPT, this does not allow to distinguish male from female fetuses (default: x=2.5; optimized for Bowtie2 hg38 mapping)  
+`-cutoff x` | Y-read permille cut-off: above is male, below is female. Note that for NIPT, this does not allow to distinguish male from female fetuses (default: x=3.5; optimized for mapping as [`described above`](#mapping))  
 
 ### Stage (3) Predict CNAs  
 

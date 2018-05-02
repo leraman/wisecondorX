@@ -172,7 +172,6 @@ def toolNewrefPost(args):
                         gender=args.gender)
 
 
-# Most of this "tool" is actually basic functionality and should be in wisetools.py instead (and still is in WCX!)
 def toolTest(args):
     WC_dir = os.path.realpath(__file__)
 
@@ -225,14 +224,14 @@ def toolTest(args):
 
     testData = toNumpyRefFormat(sample, chromosome_sizes, mask, gender)
     testData = applyPCA(testData, pca_mean, pca_components)
-    optimalCutoff, cutOffMask = getOptimalCutoff(distances, args.maskrepeats)
+    autosomeCutoff, allosomeCutoff = getOptimalCutoff(distances, chromosome_sizes, args.maskrepeats)
 
     z_threshold = norm.ppf(0.975)  # two-tailed test
 
     print 'Applying within-sample normalization ...'
     testCopy = np.copy(testData)
     resultsZ, resultsR, refSizes, stdDevAvg = repeatTest(testCopy, indexes, distances, masked_sizes, maskedChromBinSums,
-                                                         optimalCutoff, z_threshold, 5)
+                                                         autosomeCutoff, allosomeCutoff, z_threshold, 5)
     # Get rid of infinite values caused by having no reference bins or only zeros in the reference
     infinite_mask = (refSizes >= args.minrefbins)
     mask_list.append(infinite_mask)
@@ -298,19 +297,7 @@ def toolTest(args):
     # Create plots: optional
     if args.plot:
         print 'Writing plots ...'
-        json_file = open(args.outid + "_plot_tmp.json", "w")
-        json.dump(json_out, json_file)
-        json_file.close()
-
-        plot_script = str(os.path.dirname(WC_dir)) + "/R/plotter.R"
-        if gender == "M":
-            sexchrom = "XY"
-        else:
-            sexchrom = "X"
-        os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + "_plot_tmp.json\" --outdir \"" +
-                 args.outid + ".plots\"" + " --sexchroms " + sexchrom + " --beta " + str(args.beta))
-
-        os.remove(args.outid + "_plot_tmp.json")
+        writePlots(args, json_out, WC_dir, gender)
 
     print("Done!")
     exit(0)
@@ -385,7 +372,7 @@ def main():
     parser_gender.add_argument('infile',
                                type=str, help='.npz input file')
     parser_gender.add_argument('-cutoff',
-                               type=float, default=2.5, help='Y-read permille cut-off. Below is female, above is male')
+                               type=float, default=3.5, help='Y-read permille cut-off. Below is female, above is male')
     parser_gender.set_defaults(func=get_gender)
 
     # New reference creation

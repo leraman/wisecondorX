@@ -132,9 +132,7 @@ def convertBam(bamfile, binsize=100000, minShift=4, threshold=6, mapq=1, demandP
             chromName = '23'
         if chromName == 'Y':
             chromName = '24'
-
         prevRead = sam_iter.next()
-
         # Split paths here, for-loop was heavily slowed down by if-statements otherwise
         if demandPair:
             for read in sam_iter:
@@ -179,10 +177,10 @@ def convertBam(bamfile, binsize=100000, minShift=4, threshold=6, mapq=1, demandP
                 reads_seen += 1
                 larp = read.pos
 
-        # Flush after we're done
-        flush(readBuff, counts)
-        chromosomes[chromName] = counts
-        reads_kept += sum(counts)
+            # Flush after we're done
+            flush(readBuff, counts)
+            chromosomes[chromName] = counts
+            reads_kept += sum(counts)
 
     # print reads_seen,reads_kept
     qual_info = {'mapped': sam_file.mapped,
@@ -314,15 +312,28 @@ def getRefForBins(amount, start, end, sampleData, otherData, knit_length):
     return refIndexes, refDistances
 
 
-def getOptimalCutoff(reference, repeats):
-    optimalCutoff = float("inf")
-    mask = np.zeros(reference.shape)
+def getOptimalCutoff(reference, chromosome_sizes, repeats):
+    autosomeLen = sum(chromosome_sizes[:22])
+
+    autosomeRef = reference[:autosomeLen]
+    autosomeCutoff = float("inf")
+    mask = np.zeros(autosomeRef.shape)
     for i in range(0, repeats):
-        mask = reference < optimalCutoff
-        average = np.average(reference[mask])
-        stddev = np.std(reference[mask])
-        optimalCutoff = average + 3 * stddev
-    return optimalCutoff, mask
+        mask = autosomeRef < autosomeCutoff
+        average = np.average(autosomeRef[mask])
+        stddev = np.std(autosomeRef[mask])
+        autosomeCutoff = average + 3 * stddev
+
+    allosomeRef = reference[autosomeLen:]
+    allosomeCutoff = float("inf")
+    mask = np.zeros(allosomeRef.shape)
+    for i in range(0, repeats):
+        mask = allosomeRef < allosomeCutoff
+        average = np.average(allosomeRef[mask])
+        stddev = np.std(allosomeRef[mask])
+        allosomeCutoff = average + 3 * stddev
+
+    return autosomeCutoff, allosomeCutoff
 
 
 # Returns: Chromosome index, startBinNumber, endBinNumber
@@ -405,7 +416,7 @@ def getReference(correctedData, chromosomeBins, chromosomeBinSums, gender, selec
     return indexArray, distanceArray
 
 
-def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosomeBinSums, cutoff):
+def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosomeBinSums, autosomeCutoff, allosomeCutoff):
     bincount = chromosomeBinSums[-1]
 
     resultsZ = np.zeros(bincount)
@@ -422,7 +433,10 @@ def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosome
             (testCopy[:chromosomeBinSums[chrom] - chromosomeBins[chrom]], testCopy[chromosomeBinSums[chrom]:]))
 
         for index in indexes[start:end]:
-            refData = chromData[index[distances[i] < cutoff]]
+            if chrom < 22:
+                refData = chromData[index[distances[i] < autosomeCutoff]]
+            else:
+                refData = chromData[index[distances[i] < allosomeCutoff]]
             refData = refData[refData >= 0]  # Previously found aberrations are marked by negative values
             refMean = np_mean(refData)
             refStdDev = np_std(refData)
@@ -437,13 +451,13 @@ def trySample(testData, testCopy, indexes, distances, chromosomeBins, chromosome
     return resultsZ, resultsR, refSizes, stdDevSum / stdDevNum
 
 
-def repeatTest(testData, indexes, distances, chromosomeBins, chromosomeBinSums, cutoff, threshold, repeats):
+def repeatTest(testData, indexes, distances, chromosomeBins, chromosomeBinSums, autosomeCutoff, allosomeCutoff, threshold, repeats):
     resultsZ = None
     resultsR = None
     testCopy = np.copy(testData)
     for i in xrange(repeats):
         resultsZ, resultsR, refSizes, stdDevAvg = trySample(testData, testCopy, indexes, distances, chromosomeBins,
-                                                            chromosomeBinSums, cutoff)
+                                                            chromosomeBinSums, autosomeCutoff, allosomeCutoff)
         testCopy[np_abs(resultsZ) >= threshold] = -1
     return resultsZ, resultsR, refSizes, stdDevAvg
 
@@ -516,6 +530,21 @@ def generateTxtOuts(args, binsize, json_out):
     statistics_file.write("Median of all within-segment ratio variances: " + str(
         getMedianWithinSegmentVariance(segments, resultsR)) + "\n")
     statistics_file.close()
+
+def writePlots(args, json_out, WC_dir, gender):
+    json_file = open(args.outid + "_plot_tmp.json", "w")
+    json.dump(json_out, json_file)
+    json_file.close()
+
+    plot_script = str(os.path.dirname(WC_dir)) + "/R/plotter.R"
+    if gender == "M":
+        sexchrom = "XY"
+    else:
+        sexchrom = "X"
+    os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + "_plot_tmp.json\" --outdir \"" +
+             args.outid + ".plots\"" + " --sexchroms " + sexchrom + " --beta " + str(args.beta))
+
+    os.remove(args.outid + "_plot_tmp.json")
 
 
 def getMedianWithinSegmentVariance(segments, binratios):
