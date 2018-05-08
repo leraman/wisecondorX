@@ -325,9 +325,9 @@ def get_gender(args):
     Y = float(np.sum(sample["24"]))
     permilleY = Y / (nonY + Y) * 1000.0
     if permilleY > args.cutoff:
-        return "male"
+        print("male")
     else:
-        return "female"
+        print("female")
     exit(1)
 
 
