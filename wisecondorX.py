@@ -328,7 +328,6 @@ def get_gender(args):
         print("male")
     else:
         print("female")
-    exit(1)
 
 
 def main():
