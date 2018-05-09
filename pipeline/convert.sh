@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-#PBS -l walltime=383:59:59
-#PBS -l nodes=1:ppn=1
 
 # PARAMETERS
-
-WISECONDORX_DIR="path/to/wisecondorX" # wisecondorX clone
-
 BAM_FILES="path/to/bam_files.txt" # reference or test cases
 # Example of the structure of this file:
 # ID_1 path/to/ID_1.bam
@@ -20,6 +15,6 @@ while read LINE; do
     BAM=$(echo $LINE | awk -F ' ' '{print $2}')
 
     echo "Creating 5kb bins for sample ${SAMPLE}"
-    python2 ${WISECONDORX_DIR}/wisecondorX.py convert ${BAM} ${OUTPUT_DIR}/${SAMPLE}.npz
+    wisecondorX convert ${BAM} ${OUTPUT_DIR}/${SAMPLE}.npz
 
 done < ${BAM_FILES}

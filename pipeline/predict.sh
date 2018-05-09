@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-#PBS -l walltime=383:59:59
-#PBS -l nodes=1:ppn=1
 
 # PARAMETERS
-
-WISECONDORX_DIR="path/to/wisecondorX" # wisecondorX clone
-
 NPZ_FILES="path/to/samples.txt" # cases that will be tested versus the given reference
 # Example of the structure of this file:
 # ID_1 path/to/convert.npz/ID_1.npz
@@ -27,6 +22,6 @@ while read LINE; do
     NPZ=$(echo $LINE | awk -F ' ' '{print $2}')
 
     echo "Predicting sample ${SAMPLE}"
-    python2 ${WISECONDORX_DIR}/wisecondorX.py predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
+    wisecondorX predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
 
 done <${NPZ_FILES}
