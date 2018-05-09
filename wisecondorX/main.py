@@ -1,41 +1,39 @@
+#!/usr/bin/env python
+
 import argparse
 import sys
-
 from scipy.stats import norm
+from wisecondorX.wisetools import *
 
-from python.wisetools import *
 
-
-def toolConvert(args):
-    print 'Importing data ...'
-    print 'Converting bam ... This might take a while ...'
-    converted, qual_info = convertBam(args.infile, binsize=args.binsize, minShift=args.retdist, threshold=args.retthres)
+def tool_convert(args):
+    print('Importing data ...')
+    print('Converting bam ... This might take a while ...')
+    converted, qual_info = convert_bam(args.infile, binsize=args.binsize, min_shift=args.retdist, threshold=args.retthres)
     np.savez_compressed(args.outfile,
                         arguments=vars(args),
-                        runtime=getRuntime(),
+                        runtime=get_runtime(),
                         sample=converted,
                         quality=qual_info)
-    print 'Done!'
-    exit(0)
+    print('Done!')
 
 
-def toolNewref(args):
+def tool_newref(args):
     if args.gender != "M" and args.gender != "F":
-        print "ERROR: Unknown gender"
-        print "Select \"M\" or \"F\""
-        exit(1)
+        print("ERROR: Unknown gender")
+        print("Select \"M\" or \"F\"")
 
-    splitPath = list(os.path.split(args.outfile))
-    if splitPath[-1][-4:] == '.npz':
-        splitPath[-1] = splitPath[-1][:-4]
-    basePath = os.path.join(splitPath[0], splitPath[1])
+    split_path = list(os.path.split(args.outfile))
+    if split_path[-1][-4:] == '.npz':
+        split_path[-1] = split_path[-1][:-4]
+    base_path = os.path.join(split_path[0], split_path[1])
 
     # Add single thread information used for parallel processing functions
-    args.prepfile = basePath + "_prep.npz"
-    args.partfile = basePath + "_part"
+    args.prepfile = base_path + "_prep.npz"
+    args.partfile = base_path + "_part"
     args.parts = args.cpus
 
-    toolNewrefPrep(args)
+    tool_newrefrrep(args)
 
     # Use multiple cores if requested
     if args.cpus != 1:
@@ -44,18 +42,18 @@ def toolNewref(args):
         with concurrent.futures.ProcessPoolExecutor(max_workers=args.cpus) as executor:
             for part in xrange(1, args.parts + 1):
                 if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
-                    thisArgs = copy.copy(args)
-                    thisArgs.part = [part, args.parts]
-                    executor.submit(toolNewrefPart, thisArgs)
+                    this_args = copy.copy(args)
+                    this_args.part = [part, args.parts]
+                    executor.submit(tool_newrefpart, this_args)
             executor.shutdown(wait=True)
     else:
         for part in xrange(1, args.parts + 1):
             if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
                 args.part = [part, args.parts]
-                toolNewrefPart(args)
+                tool_newrefpart(args)
 
     # Put it all together
-    toolNewrefPost(args)
+    tool_newrefpost(args)
 
     # Remove parallel processing temp data
     os.remove(args.prepfile)
@@ -66,241 +64,235 @@ def toolNewref(args):
     exit(0)
 
 
-def toolNewrefPrep(args):
+def tool_newrefrrep(args):
     samples = []
     nreads = []
     binsizes = set()
-    print 'Importing data ...'
+    print('Importing data ...')
     for infile in args.infiles:  # glob.glob(args.infiles):
-        print 'Loading:', infile,
+        print('Loading:{}'.format(infile))
         npzdata = np.load(infile)
         sample = npzdata['sample'].item()
-        print ' \tbinsize:', int(npzdata['arguments'].item()['binsize'])
-        samples.append(scaleSample(sample, npzdata['arguments'].item()['binsize'], args.binsize))
+        print(' \tbinsize:{}'.format(int(npzdata['arguments'].item()['binsize'])))
+        samples.append(scale_sample(sample, npzdata['arguments'].item()['binsize'], args.binsize))
         nreads.append(sum([sum(sample[x]) for x in sample.keys()]))
         binsizes.add(npzdata['arguments'].item()['binsize'])
 
     if args.binsize is None and len(binsizes) != 1:
-        print 'ERROR: There appears to be a mismatch in binsizes in your dataset:', binsizes
-        print 'Either remove the offending sample or use -binsize to scale all samples'
-        exit(1)
+        print('ERROR: There appears to be a mismatch in binsizes in your dataset: {}'.format(binsizes))
+        print('Either remove the offending sample or use -binsize to scale all samples')
 
     binsize = args.binsize
     if args.binsize is None:
         binsize = binsizes.pop()
 
-    maskedData, chromosomeBins, mask = toNumpyArray(samples, args.gender)
+    masked_data, chromosome_bins, mask = to_numpy_array(samples, args.gender)
     del samples
-    maskedChromBins = [sum(mask[sum(chromosomeBins[:i]):sum(chromosomeBins[:i]) + x]) for i, x in
-                       enumerate(chromosomeBins)]
-    maskedChromBinSums = [sum(maskedChromBins[:x + 1]) for x in range(len(maskedChromBins))]
-    correctedData, pca = trainPCA(maskedData)
+    masked_chrom_bins = [sum(mask[sum(chromosome_bins[:i]):sum(chromosome_bins[:i]) + x]) for i, x in
+                         enumerate(chromosome_bins)]
+    masked_chrom_bin_sums = [sum(masked_chrom_bins[:x + 1]) for x in range(len(masked_chrom_bins))]
+    corrected_data, pca = train_pca(masked_data)
     np.savez_compressed(args.prepfile,
                         arguments=vars(args),
-                        runtime=getRuntime(),
+                        runtime=get_runtime(),
                         binsize=binsize,
-                        chromosomeBins=chromosomeBins,
-                        maskedData=maskedData,
+                        chromosomeBins=chromosome_bins,
+                        maskedData=masked_data,
                         mask=mask,
-                        maskedChromBins=maskedChromBins,
-                        maskedChromBinSums=maskedChromBinSums,
-                        correctedData=correctedData,
+                        maskedChromBins=masked_chrom_bins,
+                        maskedChromBinSums=masked_chrom_bin_sums,
+                        correctedData=corrected_data,
                         pca_components=pca.components_,
                         pca_mean=pca.mean_)
 
 
-def toolNewrefPart(args):
+def tool_newrefpart(args):
     if args.part[0] > args.part[1]:
-        print 'ERROR: Part should be smaller or equal to total parts:', args.part[0], '>', args.part[
-            1], 'is wrong'
-        exit(1)
+        print('ERROR: Part should be smaller or equal to total parts:{} > {} is wrong').format(args.part[0], args.part[1])
     if args.part[0] < 0:
-        print 'ERROR: Part should be at least zero:', args.part[0], '<', 0, 'is wrong'
-        exit(1)
+        print('ERROR: Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
 
     npzdata = np.load(args.prepfile)
-    correctedData = npzdata['correctedData']
-    maskedChromBins = npzdata['maskedChromBins']
-    maskedChromBinSums = npzdata['maskedChromBinSums']
+    corrected_data = npzdata['correctedData']
+    masked_chrom_bins = npzdata['maskedChromBins']
+    masked_chrom_bin_sums = npzdata['maskedChromBinSums']
 
-    print 'Creating reference ... This might take a while ...'
-    indexes, distances = getReference(correctedData, maskedChromBins, maskedChromBinSums, args.gender,
-                                      selectRefAmount=args.refsize, part=args.part[0], splitParts=args.part[1])
+    print('Creating reference ... This might take a while ...')
+    indexes, distances = get_reference(corrected_data, masked_chrom_bins, masked_chrom_bin_sums, args.gender,
+                                       select_ref_amount=args.refsize, part=args.part[0], split_parts=args.part[1])
 
     np.savez_compressed(args.partfile + '_' + str(args.part[0]) + '.npz',
                         arguments=vars(args),
-                        runtime=getRuntime(),
+                        runtime=get_runtime(),
                         indexes=indexes,
                         distances=distances)
 
-def toolNewrefPost(args):
+
+def tool_newrefpost(args):
     # Load prep file data
     npzdata = np.load(args.prepfile)
-    maskedChromBins = npzdata['maskedChromBins']
-    chromosomeBins = npzdata['chromosomeBins']
+    masked_chrom_bins = npzdata['maskedChromBins']
+    chromosome_bins = npzdata['chromosome_bins']
     mask = npzdata['mask']
     pca_components = npzdata['pca_components']
     pca_mean = npzdata['pca_mean']
     binsize = npzdata['binsize'].item()
 
     # Load and combine part file data
-    bigIndexes = []
-    bigDistances = []
+    big_indexes = []
+    big_distances = []
     for part in xrange(1, args.parts + 1):  # glob.glob(args.infiles):
         infile = args.partfile + '_' + str(part) + '.npz'
-        print 'Loading:', infile
+        print('Loading: {}'.format(infile))
         npzdata = np.load(infile)
-        bigIndexes.extend(npzdata['indexes'])
-        bigDistances.extend(npzdata['distances'])
+        big_indexes.extend(npzdata['indexes'])
+        big_distances.extend(npzdata['distances'])
 
-        print part, npzdata['indexes'].shape
+        print("{}, {}".format(part, npzdata['indexes'].shape))
 
-    indexes = np.array(bigIndexes)
-    distances = np.array(bigDistances)
+    indexes = np.array(big_indexes)
+    distances = np.array(big_distances)
 
     np.savez_compressed(args.outfile,
                         arguments=vars(args),
-                        runtime=getRuntime(),
+                        runtime=get_runtime(),
                         binsize=binsize,
                         indexes=indexes,
                         distances=distances,
-                        chromosome_sizes=chromosomeBins,
+                        chromosome_sizes=chromosome_bins,
                         mask=mask,
-                        masked_sizes=maskedChromBins,
+                        masked_sizes=masked_chrom_bins,
                         pca_components=pca_components,
                         pca_mean=pca_mean,
                         gender=args.gender)
 
 
-def toolTest(args):
-    WC_dir = os.path.realpath(__file__)
+def tool_test(args):
+    wc_dir = os.path.realpath(__file__)
 
     time_at_start = datetime.datetime.now()
     start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
                   time_at_start.hour, time_at_start.minute, time_at_start.second]
 
-    print 'Importing data ...'
-    referenceFile = np.load(args.reference)
-    sampleFile = np.load(args.infile)
+    print('Importing data ...')
+    reference_file = np.load(args.reference)
+    sample_file = np.load(args.infile)
 
     if not args.bed and not args.plot:
-        print "ERROR: No output format selected"
-        print "Select at least one of the supported output formats (-bed, -plot)"
-        exit(1)
+        print("ERROR: No output format selected")
+        print("Select at least one of the supported output formats (-bed, -plot)")
 
     if args.beta <= 0 or args.beta > 1:
-        print "ERROR: Parameter beta should be a strictly positive number lower than 1"
-        exit(1)
+        print("ERROR: Parameter beta should be a strictly positive number lower than 1")
 
     if args.beta < 0.05:
-        print "WARNING: Parameter beta seems to be a bit low."
-        print "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?"
+        print("WARNING: Parameter beta seems to be a bit low.")
+        print("Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?")
 
     # Reference data handling
     mask_list = []
-    gender = referenceFile['gender']
+    gender = reference_file['gender']
 
-    binsize = referenceFile['binsize'].item()
-    indexes = referenceFile['indexes']
-    distances = referenceFile['distances']
-    chromosome_sizes = referenceFile['chromosome_sizes']
-    mask = referenceFile['mask']
+    binsize = reference_file['binsize'].item()
+    indexes = reference_file['indexes']
+    distances = reference_file['distances']
+    chromosome_sizes = reference_file['chromosome_sizes']
+    mask = reference_file['mask']
     mask_list.append(mask)
-    masked_sizes = referenceFile['masked_sizes']
-    maskedChromBinSums = [sum(masked_sizes[:x + 1]) for x in range(len(masked_sizes))]
+    masked_sizes = reference_file['masked_sizes']
+    masked_chrom_bin_sums = [sum(masked_sizes[:x + 1]) for x in range(len(masked_sizes))]
 
-    pca_mean = referenceFile['pca_mean']
-    pca_components = referenceFile['pca_components']
+    pca_mean = reference_file['pca_mean']
+    pca_components = reference_file['pca_components']
 
-    del referenceFile
+    del reference_file
 
     # Test sample data handling
-    sample = sampleFile['sample'].item()
+    sample = sample_file['sample'].item()
 
-    print 'Applying between-sample normalization ...'
+    print('Applying between-sample normalization ...')
     nreads = sum([sum(sample[x]) for x in sample.keys()])
-    sampleBinSize = sampleFile['arguments'].item()['binsize']
-    sample = scaleSample(sample, sampleBinSize, binsize)
+    sample_bin_size = sample_file['arguments'].item()['binsize']
+    sample = scale_sample(sample, sample_bin_size, binsize)
 
-    testData = toNumpyRefFormat(sample, chromosome_sizes, mask, gender)
-    testData = applyPCA(testData, pca_mean, pca_components)
-    autosomeCutoff, allosomeCutoff = getOptimalCutoff(distances, chromosome_sizes, args.maskrepeats)
+    test_data = to_numpy_ref_format(sample, chromosome_sizes, mask, gender)
+    test_data = apply_pca(test_data, pca_mean, pca_components)
+    autosome_cutoff, allosome_cutoff = get_optimal_cutoff(distances, chromosome_sizes, args.maskrepeats)
 
     z_threshold = norm.ppf(0.975)  # two-tailed test
 
-    print 'Applying within-sample normalization ...'
-    testCopy = np.copy(testData)
-    resultsZ, resultsR, refSizes, stdDevAvg = repeatTest(testCopy, indexes, distances, masked_sizes, maskedChromBinSums,
-                                                         autosomeCutoff, allosomeCutoff, z_threshold, 5)
+    print('Applying within-sample normalization ...')
+    test_copy = np.copy(test_data)
+    results_z, results_r, ref_sizes, std_dev_avg = repeat_test(test_copy, indexes, distances, masked_sizes, masked_chrom_bin_sums,
+                                                               autosome_cutoff, allosome_cutoff, z_threshold, 5)
     # Get rid of infinite values caused by having no reference bins or only zeros in the reference
-    infinite_mask = (refSizes >= args.minrefbins)
+    infinite_mask = (ref_sizes >= args.minrefbins)
     mask_list.append(infinite_mask)
-    cleanedR = resultsR[infinite_mask]
-    cleanedZ = resultsZ[infinite_mask]
-    cleanedBinSums = [np_sum(infinite_mask[:val]) for val in maskedChromBinSums]
-    cleanedBins = [cleanedBinSums[i] - cleanedBinSums[i - 1] for i in range(1, len(cleanedBinSums))]
-    cleanedBins.insert(0, cleanedBinSums[0])
+    cleaned_r = results_r[infinite_mask]
+    cleaned_z = results_z[infinite_mask]
+    cleaned_bin_sums = [np_sum(infinite_mask[:val]) for val in masked_chrom_bin_sums]
+    cleaned_bins = [cleaned_bin_sums[i] - cleaned_bin_sums[i - 1] for i in range(1, len(cleaned_bin_sums))]
+    cleaned_bins.insert(0, cleaned_bin_sums[0])
 
-    resultsZ = []
-    resultsR = []
-    inflatedZ = inflateArrayMulti(cleanedZ, mask_list)
-    inflatedR = inflateArrayMulti(cleanedR, mask_list)
+    results_z = []
+    results_r = []
+    inflated_z = inflate_array_multi(cleaned_z, mask_list)
+    inflated_r = inflate_array_multi(cleaned_r, mask_list)
     for chrom in xrange(len(chromosome_sizes)):
-        chromData = inflatedZ[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
-        resultsZ.append(chromData)
-        chromData = inflatedR[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
-        resultsR.append(chromData)
+        chrom_data = inflated_z[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
+        results_z.append(chrom_data)
+        chrom_data = inflated_r[sum(chromosome_sizes[:chrom]):sum(chromosome_sizes[:chrom + 1])]
+        results_r.append(chrom_data)
 
     # log2
     for chrom in xrange(len(chromosome_sizes)):
-        resultsR[chrom] = np.log2(resultsR[chrom])
+        results_r[chrom] = np.log2(results_r[chrom])
 
     # Apply blacklist
-    if args.blacklist != None:
-        applyBlacklist(args, binsize, resultsR, resultsZ, sample, gender)
+    if args.blacklist:
+        apply_blacklist(args, binsize, results_r, results_z, sample, gender)
 
     # Make R interpretable
-    resultsR = [x.tolist() for x in resultsR]
-    nchrs = len(resultsR)
+    results_r = [x.tolist() for x in results_r]
+    nchrs = len(results_r)
     for c in range(nchrs):
-        for i, rR in enumerate(resultsR[c]):
+        for i, rR in enumerate(results_r[c]):
             if not np.isfinite(rR):
-                resultsR[c][i] = 0  # 0 -> result not found; translated to NA in R
-    resultsZ = [x.tolist() for x in resultsZ]
+                results_r[c][i] = 0  # 0 -> result not found; translated to NA in R
+    results_z = [x.tolist() for x in results_z]
     for c in range(nchrs):
-        for i, rR in enumerate(resultsZ[c]):
+        for i, rR in enumerate(results_z[c]):
             if not np.isfinite(rR):
-                resultsZ[c][i] = 0  # 0 -> result not found; translated to NA in R
+                results_z[c][i] = 0  # 0 -> result not found; translated to NA in R
 
-    print 'Obtaining CBS segments ...'
-    cbs_calls = CBS(args, resultsR, resultsZ, gender, WC_dir)
+    print('Obtaining CBS segments ...')
+    cbs_calls = cbs(args, results_r, results_z, gender, wc_dir)
 
     time_at_end = datetime.datetime.now()
     end_time = [time_at_end.year, time_at_end.month, time_at_end.day,
                 time_at_end.hour, time_at_end.minute, time_at_end.second]
 
     json_out = {'binsize': binsize,
-                'results_r': resultsR,
-                'results_z': resultsZ,
+                'results_r': results_r,
+                'results_z': results_z,
                 'threshold_z': z_threshold.tolist(),
-                'asdef': stdDevAvg.tolist(),
-                'aasdef': (stdDevAvg * z_threshold).tolist(),
+                'asdef': std_dev_avg.tolist(),
+                'aasdef': (std_dev_avg * z_threshold).tolist(),
                 'nreads': nreads,
                 'runtime': [start_time, end_time],
                 'cbs_calls': cbs_calls}
 
     # Save txt: optional
     if args.bed:
-        print 'Writing tables ...'
-        generateTxtOuts(args, binsize, json_out)
+        print('Writing tables ...')
+        generate_txt_output(args, binsize, json_out)
 
     # Create plots: optional
     if args.plot:
-        print 'Writing plots ...'
-        writePlots(args, json_out, WC_dir, gender)
+        print('Writing plots ...')
+        write_plots(args, json_out, wc_dir, gender)
 
     print("Done!")
-    exit(0)
 
 
 def reformat(args):
@@ -310,8 +302,8 @@ def reformat(args):
     chrs = [str(x) for x in range(1, 23)]
     chrs += ["X", "Y"]
     i = 1
-    for chr in chrs:
-        updated_sample_data[str(i)] = sample_data.item()[chr]
+    for chrom in chrs:
+        updated_sample_data[str(i)] = sample_data.item()[chrom]
         i += 1
 
     np.savez_compressed(args.outfile, arguments=original['arguments'], runtime=original['runtime'],
@@ -321,10 +313,10 @@ def reformat(args):
 def get_gender(args):
     npzfile = np.load(args.infile)
     sample = npzfile['sample'].item()
-    nonY = float(sum([np.sum(sample[str(chr)]) for chr in range(1, 24)]))
-    Y = float(np.sum(sample["24"]))
-    permilleY = Y / (nonY + Y) * 1000.0
-    if permilleY > args.cutoff:
+    non_y = float(sum([np.sum(sample[str(chr)]) for chr in range(1, 24)]))
+    y = float(np.sum(sample["24"]))
+    permille_y = y / (non_y + y) * 1000.0
+    if permille_y > args.cutoff:
         print("male")
     else:
         print("female")
@@ -354,7 +346,7 @@ def main():
     parser_convert.add_argument('-retthres',
                                 type=int, default=4,
                                 help='Threshold for when a group of reads is considered a tower and will be removed')
-    parser_convert.set_defaults(func=toolConvert)
+    parser_convert.set_defaults(func=tool_convert)
 
     # Reformat
     parser_reformat = subparsers.add_parser('reformat',
@@ -395,7 +387,7 @@ def main():
     parser_newref.add_argument('-cpus',
                                type=int, default=1,
                                help='Use multiple cores to find reference bins')
-    parser_newref.set_defaults(func=toolNewref)
+    parser_newref.set_defaults(func=tool_newref)
 
     # Find CNAs
     parser_test = subparsers.add_parser('predict',
@@ -430,7 +422,7 @@ def main():
     parser_test.add_argument('-plot',
                              action="store_true",
                              help='Outputs .png plots')
-    parser_test.set_defaults(func=toolTest)
+    parser_test.set_defaults(func=tool_test)
 
     args = parser.parse_args(sys.argv[1:])
     args.func(args)
