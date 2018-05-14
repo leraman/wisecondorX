@@ -323,75 +323,95 @@ def get_gender(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="wisecondorX")
+    parser = argparse.ArgumentParser(description="wisecondorX")
+    parser.add_argument('--loglevel', type=str, default='INFO')
     subparsers = parser.add_subparsers()
 
     # File conversion
     parser_convert = subparsers.add_parser('convert',
-                                           description='Convert and filter a .bam file to a .npz')
+                                           description='Convert and filter a .bam file to a .npz',
+                                           formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     parser_convert.add_argument('infile',
                                 type=str,
                                 help='Bam input file for conversion')
     parser_convert.add_argument('outfile',
                                 type=str,
                                 help='Output npz file')
-    parser_convert.add_argument('-binsize',
-                                type=float, default=5e3,
-                                help='Bin size (bp)')
-    parser_convert.add_argument('-retdist',
-                                type=int, default=4,
+    parser_convert.add_argument('--binsize',
+                                type=float,
+                                default=5e3,
+                                help='Bin size (bp).')
+    parser_convert.add_argument('--retdist',
+                                type=int,
+                                default=4,
                                 help='Maximum amount of base pairs difference between sequential reads '
-                                     'to consider them part of the same tower')
-    parser_convert.add_argument('-retthres',
-                                type=int, default=4,
-                                help='Threshold for when a group of reads is considered a tower and will be removed')
+                                     'to consider them part of the same tower.')
+    parser_convert.add_argument('--retthres',
+                                type=int,
+                                default=4,
+                                help='Threshold for when a group of reads is considered a tower and will be removed.')
     parser_convert.set_defaults(func=tool_convert)
 
     # Reformat
     parser_reformat = subparsers.add_parser('reformat',
-                                            description='Reformat a WISECONDOR convert.npz to a wisecondorX convert.npz')
+                                            description='Reformat a WISECONDOR convert npz '
+                                                        'to a wisecondorX convert npz',
+                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_reformat.add_argument('infile',
-                                 type=str, help='.npz input file')
+                                 type=str,
+                                 help='.npz input file')
     parser_reformat.add_argument('outfile',
-                                 type=str, help='.npz output file')
+                                 type=str,
+                                 help='.npz output file')
     parser_reformat.set_defaults(func=reformat)
 
     # Find gender
     parser_gender = subparsers.add_parser('gender',
-                                          description='Predict the gender of a sample')
+                                          description='Predict the gender of a sample',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_gender.add_argument('infile',
-                               type=str, help='.npz input file')
-    parser_gender.add_argument('-cutoff',
-                               type=float, default=3.5, help='Y-read permille cut-off. Below is female, above is male')
+                               type=str,
+                               help='.npz input file')
+    parser_gender.add_argument('--cutoff',
+                               type=float,
+                               default=3.5,
+                               help='Y-read permille cut-off. Below is female, above is male.')
     parser_gender.set_defaults(func=get_gender)
 
     # New reference creation
     parser_newref = subparsers.add_parser('newref',
-                                          description='Create a new reference using healthy reference samples')
+                                          description='Create a new reference using healthy reference samples',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_newref.add_argument('infiles',
-                               type=str, nargs='+',
+                               type=str,
+                               nargs='+',
                                help='Path to all reference data files (e.g. path/to/reference/*.npz)')
     parser_newref.add_argument('outfile',
                                type=str,
                                help='Path and filename for the reference output (i.e. ./reference/myref.npz)')
-    parser_newref.add_argument('-refsize',
-                               type=int, default=300,
-                               help='Amount of reference locations per target')
-    parser_newref.add_argument('-binsize',
-                               type=int, default=1e5,
-                               help='Scale samples to this binsize, multiples of existing binsize only')
-    parser_newref.add_argument('-gender',
-                               type=str, default="F",
-                               help='Gender of the reference .npz input files')
-    parser_newref.add_argument('-cpus',
-                               type=int, default=1,
+    parser_newref.add_argument('--refsize',
+                               type=int,
+                               default=300,
+                               help='Amount of reference locations per target.')
+    parser_newref.add_argument('--binsize',
+                               type=int,
+                               default=1e5,
+                               help='Scale samples to this binsize, multiples of existing binsize only.')
+    parser_newref.add_argument('--gender',
+                               type=str,
+                               default="F",
+                               choices=["F", "M"],
+                               help='Gender of the reference .npz input files.')
+    parser_newref.add_argument('--cpus',
+                               type=int,
+                               default=1,
                                help='Use multiple cores to find reference bins')
     parser_newref.set_defaults(func=tool_newref)
 
     # Find CNAs
     parser_test = subparsers.add_parser('predict',
-                                        description='Find copy number aberrations')
+                                        description='Find copy number aberrations',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_test.add_argument('infile',
                              type=str,
                              help='Sample.npz of which the CNAs will be predicted')
@@ -401,25 +421,31 @@ def main():
     parser_test.add_argument('outid',
                              type=str,
                              help='Basename (w/o extension) of output files (paths are allowed, e.g. path/to/ID_1)')
-    parser_test.add_argument('-minrefbins',
-                             type=int, default=150,
-                             help='Minimum amount of sensible reference bins per target bin')
-    parser_test.add_argument('-maskrepeats',
-                             type=int, default=4,
-                             help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles')
-    parser_test.add_argument('-alpha',
-                             type=float, default=1e-4,
-                             help='P-value cut-off for calling a CBS breakpoint')
-    parser_test.add_argument('-beta',
-                             type=float, default=0.1,
+    parser_test.add_argument('--minrefbins',
+                             type=int,
+                             default=150,
+                             help='Minimum amount of sensible reference bins per target bin.')
+    parser_test.add_argument('--maskrepeats',
+                             type=int,
+                             default=4,
+                             help='Regions with distances > mean + sd * 3 will be masked. Number of masking cycles.')
+    parser_test.add_argument('--alpha',
+                             type=float,
+                             default=1e-4,
+                             help='P-value cut-off for calling a CBS breakpoint.')
+    parser_test.add_argument('--beta',
+                             type=float,
+                             default=0.1,
                              help='Number between 0 and 1, defines the sensitivity for aberration calling.')
-    parser_test.add_argument('-blacklist', type=str, default=None,
+    parser_test.add_argument('--blacklist',
+                             type=str,
+                             default=None,
                              help='Blacklist that masks regions in output, structure of header-less '
                                   'file: chrX(/t)startpos(/t)endpos(/n)')
-    parser_test.add_argument('-bed',
+    parser_test.add_argument('--bed',
                              action="store_true",
                              help='Outputs tab-delimited .bed files, containing the most important information')
-    parser_test.add_argument('-plot',
+    parser_test.add_argument('--plot',
                              action="store_true",
                              help='Outputs .png plots')
     parser_test.set_defaults(func=tool_test)
