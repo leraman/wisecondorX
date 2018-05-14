@@ -2,9 +2,11 @@ import bisect
 import datetime
 import getpass
 import json
+import logging
 import math
 import os
 import socket
+import sys
 import time
 # Get rid of some useless warnings, I know there are emtpy slices
 import warnings
@@ -120,7 +122,7 @@ def convert_bam(bamfile, binsize=100000, min_shift=4, threshold=6, mapq=1, deman
         if chrom_name not in chromosomes and chrom_name != "X" and chrom_name != "Y":
             continue
 
-        print('length: {}, bins: {}'.format(
+        logging.info('length: {}, bins: {}'.format(
             chrom, sam_file.lengths[index], int(sam_file.lengths[index] / float(binsize) + 1)))
         counts = np.zeros(int(sam_file.lengths[index] / float(binsize) + 1), dtype=np.int32)
 
@@ -198,8 +200,8 @@ def scale_sample(sample, from_size, to_size):
         return sample
 
     if to_size == 0 or from_size == 0 or to_size < from_size or to_size % from_size > 0:
-        print 'ERROR: Impossible binsize scaling requested:', from_size, 'to', to_size
-        exit(1)
+        logging.error("Impossible binsize scaling requested: {} to {}".format(from_size, to_size))
+        sys.exit()
 
     return_sample = dict()
     scale = to_size / from_size
@@ -237,11 +239,11 @@ def to_numpy_array(samples, gender):
     sum_per_sample = np_sum(all_data, 0)
     all_data = all_data / sum_per_sample
 
-    print('Applying nonzero mask on the data: {}'.format(all_data.shape))
+    logging.info('Applying nonzero mask on the data: {}'.format(all_data.shape))
     sum_per_bin = np_sum(all_data, 1)
     mask = sum_per_bin > 0
     masked_data = all_data[mask, :]
-    print('becomes {}'.format(masked_data.shape))
+    logging.info('becomes {}'.format(masked_data.shape))
 
     return masked_data, chrom_bins, mask
 
@@ -360,7 +362,8 @@ def get_part(partnum, outof, bincount):
     return start_bin, end_bin
 
 
-def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums, gender, select_ref_amount=100, part=1, split_parts=1):
+def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums,
+                  gender, select_ref_amount=100, part=1, split_parts=1):
     time_start_selection = time.time()
     big_indexes = []
     big_distances = []
@@ -368,7 +371,7 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums, gender, 
     bincount = chromosome_bin_sums[-1]
 
     start_num, end_num = get_part(part - 1, split_parts, bincount)
-    print('Working on thread {} of {} meaning bins {} up to {}'.format(part, split_parts, start_num, end_num))
+    logging.info('Working on thread {} of {} meaning bins {} up to {}'.format(part, split_parts, start_num, end_num))
     regions = split_by_chrom(start_num, end_num, chromosome_bin_sums)
 
     for region in regions:
@@ -381,7 +384,7 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums, gender, 
         if end_num < end:
             end = end_num
 
-        print('Thread {} | Actual Chromosome area {} {} | chr {}'.format(
+        logging.info('Thread {} | Actual Chromosome area {} {} | chr {}'.format(
             part, chromosome_bin_sums[chrom] - chromosome_bins[chrom], chromosome_bin_sums[chrom], str(chrom + 1)))
         chrom_data = np.concatenate((corrected_data[:chromosome_bin_sums[chrom] - chromosome_bins[chrom], :],
                                     corrected_data[chromosome_bin_sums[chrom]:, :]))
@@ -402,11 +405,12 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums, gender, 
             else:
                 knit_length = x_length
 
-        part_indexes, part_distances = get_ref_for_bins(select_ref_amount, start, end, corrected_data, chrom_data, knit_length)
+        part_indexes, part_distances = get_ref_for_bins(select_ref_amount, start,
+                                                        end, corrected_data, chrom_data, knit_length)
         big_indexes.extend(part_indexes)
         big_distances.extend(part_distances)
 
-        print('{} Time spent {} seconds'.format(part, int(time.time() - time_start_selection)))
+        logging.info('{} Time spent {} seconds'.format(part, int(time.time() - time_start_selection)))
 
     index_array = np.array(big_indexes)
     distance_array = np.array(big_distances)
@@ -414,7 +418,8 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums, gender, 
     return index_array, distance_array
 
 
-def try_sample(test_data, test_copy, indexes, distances, chromosome_bins, chromosome_bin_sums, autosome_cutoff, allosome_cutoff):
+def try_sample(test_data, test_copy, indexes, distances, chromosome_bins,
+               chromosome_bin_sums, autosome_cutoff, allosome_cutoff):
     bincount = chromosome_bin_sums[-1]
 
     results_z = np.zeros(bincount)
@@ -449,13 +454,15 @@ def try_sample(test_data, test_copy, indexes, distances, chromosome_bins, chromo
     return results_z, results_r, ref_sizes, std_dev_sum / std_dev_num
 
 
-def repeat_test(test_data, indexes, distances, chromosome_bins, chromosome_bin_sums, autosome_cutoff, allosome_cutoff, threshold, repeats):
+def repeat_test(test_data, indexes, distances, chromosome_bins,
+                chromosome_bin_sums, autosome_cutoff, allosome_cutoff, threshold, repeats):
     results_z = None
     results_r = None
     test_copy = np.copy(test_data)
     for i in xrange(repeats):
-        results_z, results_r, ref_sizes, std_dev_avg = try_sample(test_data, test_copy, indexes, distances, chromosome_bins,
-                                                                chromosome_bin_sums, autosome_cutoff, allosome_cutoff)
+        results_z, results_r, ref_sizes, std_dev_avg = try_sample(test_data, test_copy, indexes, distances,
+                                                                  chromosome_bins, chromosome_bin_sums,
+                                                                  autosome_cutoff, allosome_cutoff)
         test_copy[np_abs(results_z) >= threshold] = -1
     return results_z, results_r, ref_sizes, std_dev_avg
 
@@ -530,12 +537,12 @@ def generate_txt_output(args, binsize, json_out):
     statistics_file.close()
 
 
-def write_plots(args, json_out, WC_dir, gender):
+def write_plots(args, json_out, wc_dir, gender):
     json_file = open(args.outid + "_plot_tmp.json", "w")
     json.dump(json_out, json_file)
     json_file.close()
 
-    plot_script = str(os.path.dirname(WC_dir)) + "/include/plotter.R"
+    plot_script = str(os.path.dirname(wc_dir)) + "/include/plotter.R"
     if gender == "M":
         sexchrom = "XY"
     else:
@@ -551,7 +558,7 @@ def get_median_within_segment_variance(segments, binratios):
     for segment in segments:
         segment_ratios = binratios[int(segment[0]) - 1][int(segment[1]):int(segment[2])]
         segment_ratios = [x for x in segment_ratios if x != 0]
-        if segment_ratios != []:
+        if [] != segment_ratios:
             var = np.var(segment_ratios)
             vars.append(var)
     return np.median(vars)

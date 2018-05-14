@@ -1,27 +1,28 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 import sys
 from scipy.stats import norm
 from wisecondorX.wisetools import *
 
 
 def tool_convert(args):
-    print('Importing data ...')
-    print('Converting bam ... This might take a while ...')
-    converted, qual_info = convert_bam(args.infile, binsize=args.binsize, min_shift=args.retdist, threshold=args.retthres)
+    logging.info('Starting conversion')
+    logging.info('Importing data ...')
+    logging.info('Converting bam ... This might take a while ...')
+    converted, qual_info = convert_bam(args.infile, binsize=args.binsize,
+                                       min_shift=args.retdist, threshold=args.retthres)
     np.savez_compressed(args.outfile,
                         arguments=vars(args),
                         runtime=get_runtime(),
                         sample=converted,
                         quality=qual_info)
-    print('Done!')
+    logging.info('Finished Conversion')
 
 
 def tool_newref(args):
-    if args.gender != "M" and args.gender != "F":
-        print("ERROR: Unknown gender")
-        print("Select \"M\" or \"F\"")
+    logging.info('Creating new reference.')
 
     split_path = list(os.path.split(args.outfile))
     if split_path[-1][-4:] == '.npz':
@@ -60,27 +61,26 @@ def tool_newref(args):
     for part in xrange(1, args.parts + 1):
         os.remove(args.partfile + '_' + str(part) + '.npz')
 
-    print("Done!")
-    exit(0)
+    logging.info("Finished creating reference.")
 
 
 def tool_newrefrrep(args):
     samples = []
     nreads = []
     binsizes = set()
-    print('Importing data ...')
+    logging.info('Importing data ...')
     for infile in args.infiles:  # glob.glob(args.infiles):
         print('Loading:{}'.format(infile))
         npzdata = np.load(infile)
         sample = npzdata['sample'].item()
-        print(' \tbinsize:{}'.format(int(npzdata['arguments'].item()['binsize'])))
+        logging.info('binsize:{}'.format(int(npzdata['arguments'].item()['binsize'])))
         samples.append(scale_sample(sample, npzdata['arguments'].item()['binsize'], args.binsize))
         nreads.append(sum([sum(sample[x]) for x in sample.keys()]))
         binsizes.add(npzdata['arguments'].item()['binsize'])
 
     if args.binsize is None and len(binsizes) != 1:
-        print('ERROR: There appears to be a mismatch in binsizes in your dataset: {}'.format(binsizes))
-        print('Either remove the offending sample or use -binsize to scale all samples')
+        logging.error('There appears to be a mismatch in binsizes in your dataset: {} \n'
+                      'Either remove the offending sample or use -binsize to scale all samples'.format(binsizes))
 
     binsize = args.binsize
     if args.binsize is None:
@@ -108,16 +108,17 @@ def tool_newrefrrep(args):
 
 def tool_newrefpart(args):
     if args.part[0] > args.part[1]:
-        print('ERROR: Part should be smaller or equal to total parts:{} > {} is wrong').format(args.part[0], args.part[1])
+        logging.error('Part should be smaller or equal to total parts:{} > {} is wrong')\
+        .format(args.part[0], args.part[1])
     if args.part[0] < 0:
-        print('ERROR: Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
+        logging.error('Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
 
     npzdata = np.load(args.prepfile)
     corrected_data = npzdata['correctedData']
     masked_chrom_bins = npzdata['maskedChromBins']
     masked_chrom_bin_sums = npzdata['maskedChromBinSums']
 
-    print('Creating reference ... This might take a while ...')
+    logging.info('Creating reference ... This might take a while ...')
     indexes, distances = get_reference(corrected_data, masked_chrom_bins, masked_chrom_bin_sums, args.gender,
                                        select_ref_amount=args.refsize, part=args.part[0], split_parts=args.part[1])
 
@@ -143,7 +144,7 @@ def tool_newrefpost(args):
     big_distances = []
     for part in xrange(1, args.parts + 1):  # glob.glob(args.infiles):
         infile = args.partfile + '_' + str(part) + '.npz'
-        print('Loading: {}'.format(infile))
+        logging.info('Loading: {}'.format(infile))
         npzdata = np.load(infile)
         big_indexes.extend(npzdata['indexes'])
         big_distances.extend(npzdata['distances'])
@@ -174,20 +175,19 @@ def tool_test(args):
     start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
                   time_at_start.hour, time_at_start.minute, time_at_start.second]
 
-    print('Importing data ...')
+    logging.info('Importing data ...')
     reference_file = np.load(args.reference)
     sample_file = np.load(args.infile)
 
     if not args.bed and not args.plot:
-        print("ERROR: No output format selected")
-        print("Select at least one of the supported output formats (-bed, -plot)")
+        logging.error("No output format selected. \nSelect at least one of the supported output formats (-bed, -plot)")
 
     if args.beta <= 0 or args.beta > 1:
-        print("ERROR: Parameter beta should be a strictly positive number lower than 1")
+        logging.error("Parameter beta should be a strictly positive number lower than 1")
 
     if args.beta < 0.05:
-        print("WARNING: Parameter beta seems to be a bit low.")
-        print("Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?")
+        logging.warning("Parameter beta seems to be a bit low. \n"
+                        "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?")
 
     # Reference data handling
     mask_list = []
@@ -210,7 +210,7 @@ def tool_test(args):
     # Test sample data handling
     sample = sample_file['sample'].item()
 
-    print('Applying between-sample normalization ...')
+    logging.info('Applying between-sample normalization ...')
     nreads = sum([sum(sample[x]) for x in sample.keys()])
     sample_bin_size = sample_file['arguments'].item()['binsize']
     sample = scale_sample(sample, sample_bin_size, binsize)
@@ -221,9 +221,10 @@ def tool_test(args):
 
     z_threshold = norm.ppf(0.975)  # two-tailed test
 
-    print('Applying within-sample normalization ...')
+    logging.info('Applying within-sample normalization ...')
     test_copy = np.copy(test_data)
-    results_z, results_r, ref_sizes, std_dev_avg = repeat_test(test_copy, indexes, distances, masked_sizes, masked_chrom_bin_sums,
+    results_z, results_r, ref_sizes, std_dev_avg = repeat_test(test_copy, indexes, distances,
+                                                               masked_sizes, masked_chrom_bin_sums,
                                                                autosome_cutoff, allosome_cutoff, z_threshold, 5)
     # Get rid of infinite values caused by having no reference bins or only zeros in the reference
     infinite_mask = (ref_sizes >= args.minrefbins)
@@ -265,7 +266,7 @@ def tool_test(args):
             if not np.isfinite(rR):
                 results_z[c][i] = 0  # 0 -> result not found; translated to NA in R
 
-    print('Obtaining CBS segments ...')
+    logging.info('Obtaining CBS segments ...')
     cbs_calls = cbs(args, results_r, results_z, gender, wc_dir)
 
     time_at_end = datetime.datetime.now()
@@ -284,15 +285,15 @@ def tool_test(args):
 
     # Save txt: optional
     if args.bed:
-        print('Writing tables ...')
+        logging.info('Writing tables ...')
         generate_txt_output(args, binsize, json_out)
 
     # Create plots: optional
     if args.plot:
-        print('Writing plots ...')
+        logging.info('Writing plots ...')
         write_plots(args, json_out, wc_dir, gender)
 
-    print("Done!")
+    logging.info("Done!")
 
 
 def reformat(args):
@@ -324,7 +325,10 @@ def get_gender(args):
 
 def main():
     parser = argparse.ArgumentParser(description="wisecondorX")
-    parser.add_argument('--loglevel', type=str, default='INFO')
+    parser.add_argument('--loglevel',
+                        type=str,
+                        default='INFO',
+                        choices=['info', 'warning' , 'debug', 'error', 'critical'])
     subparsers = parser.add_subparsers()
 
     # File conversion
@@ -451,6 +455,12 @@ def main():
     parser_test.set_defaults(func=tool_test)
 
     args = parser.parse_args(sys.argv[1:])
+
+    # configure logging
+    logging.basicConfig(format='[%(levelname)s - %(asctime)s]: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=getattr(logging, args.loglevel.upper(), None))
+    logging.debug("args are: {}".format(args))
     args.func(args)
 
 
