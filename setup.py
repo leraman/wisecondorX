@@ -26,7 +26,7 @@ setup(
         'numpy'
     ],
     entry_points={
-        'console_scripts': ['WisecondorX = WisecondorX.main:main']
+        'console_scripts': ['wisecondorX = wisecondorX.main:main']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',
