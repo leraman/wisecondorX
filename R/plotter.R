@@ -103,8 +103,8 @@ for (chr in chrs){
   h.whis.per.chr = c(h.whis.per.chr, whis[2])
 }
 
-chr.wide.upper.limit <- max(0.65, max(h.whis.per.chr)) * 1.25
-chr.wide.lower.limit <- min(-0.95, min(l.whis.per.chr)) * 1.25
+chr.wide.upper.limit <- max(0.65, max(h.whis.per.chr), na.rm = T) * 1.25
+chr.wide.lower.limit <- min(-0.95, min(l.whis.per.chr), na.rm = T) * 1.25
 
 # plot chromosome wide plot
 
@@ -224,7 +224,15 @@ plot.constitutionals(2, 0, 23)
 
 par(mar = c(4,4,4,0), mgp=c(2.2,-0.5,2))
 
-boxplot(box.list[23:length(chrs)], ylim=c(min(l.whis.per.chr[23:length(chrs)]), max(h.whis.per.chr[23:length(chrs)])), 
+y.sex.down = min(l.whis.per.chr[23:length(chrs)], na.rm = T)
+y.sex.up = max(h.whis.per.chr[23:length(chrs)], na.rm = T)
+
+if(any(is.infinite(c(y.sex.down, y.sex.up)))){
+  y.sex.down = 0
+  y.sex.up = 0
+}
+
+boxplot(box.list[23:length(chrs)], ylim=c(y.sex.down, y.sex.up), 
         bg=black, axes=F, outpch = 16, ylab = expression('log'[2]*'(ratio)'))
 axis(2, tick = T, cex.lab = 2, col = black, las = 1, tcl=0.5)
 par(mar = c(4,4,4,0), mgp=c(1,0.5,2))
@@ -254,11 +262,15 @@ for (c in chrs){
   x.labels <- x.labels[2:(length(x.labels) - 1)]
   x.labels.at <- x.labels.at[2:(length(x.labels.at) - 1)]
   
-  png(paste0(out.dir, "/", labels[c],".png"), width=14,height=10,units="in",res=256)
-  
   mean = mean(box.list[[c]], na.rm = T)
   whis = boxplot(box.list[[c]], plot = F)$stats[c(1,5),]
   
+  if (any(is.na(whis))){
+    next
+  }
+  
+  png(paste0(out.dir, "/", labels[c],".png"), width=14,height=10,units="in",res=256)
+
   upper.limit <- 0.6 + whis[2]
   lower.limit <- -1.05 + whis[1]
   

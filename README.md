@@ -1,8 +1,8 @@
 # Introduction  
-After extensively comparing different WGS-based CNA tools, including [WISECONDOR](https://github.com/VUmcCGP/wisecondor),
+After extensively comparing different (shallow) WGS-based CNA tools, including [WISECONDOR](https://github.com/VUmcCGP/wisecondor),
 [QDNAseq](https://github.com/ccagc/QDNAseq), [CNVkit](https://github.com/etal/cnvkit), [Control-FREEC](https://github.com/BoevaLab/FREEC),
 [BIC-seq2](http://compbio.med.harvard.edu/BIC-seq/) and [cn.MOPS](https://bioconductor.org/packages/release/bioc/html/cn.mops.html),
-WISECONDOR appeared to normalize copy number data in the most consistent way &mdash; by far. Nevertheless,
+WISECONDOR appeared to normalize sWGS copy number data in the most consistent way &mdash; by far. Nevertheless,
 as is the case with every tool, WISECONDOR has limitations of its own: the Stouffer's z-score approach is error-prone when
 dealing with large amounts of aberrations, the algorithm is extremely slow (24h) when using small bin sizes (15 kb) and
 sex chromosomes are not included in the analysis. Here, I present WisecondorX, an evolved WISECONDOR that aims at dealing with
@@ -36,7 +36,8 @@ There are three main stages for using WisecondorX:
         wrongly map the X chromosome. Using a matching reference, the latter is accounted for.
         - For NIPT, exclusively a female reference should be created. This implies that for NIPT, WisecondorX is not able
         to analyse the Y chromosome. Furthermore, obtaining consistent shifts in the X chromosome is only possible when the reference
-        is created using pregnancies of female fetuses only.  
+        is created using pregnancies of female fetuses only. When this cannot be achieved, you risk blacklisting the entire X chromosome
+        due to its variability because of fetal fraction dependence.  
         - It is of paramount importance that the reference set consists of exclusively healthy samples that originate from the same 
         sequencer, mapper, reference genome, type of material, ... etc, as the test samples. As a rule of thumb, think of
         all laboratory and in silico pre-processing steps: the more sources of bias that can be omitted, the better.  

@@ -72,6 +72,17 @@ for (chr in chrs){
 for.cbs$chromosome <- chr.rep; for.cbs$x <- chr.rep.2
 for.cbs <- for.cbs[, c(2,3,1)] ; colnames(for.cbs)[3] <- "y"
 
+# Check for complete NA/chr
+
+remove.this <- c()
+for (chr in chrs){
+    check.this <- which(for.cbs$chromosome == chr)
+    if(all(is.na(for.cbs$y[check.this]))){
+        remove.this <- c(remove.this, check.this)
+    }
+}
+for.cbs <- for.cbs[-remove.this,]
+
 # CBS
 
 CNA.object <- CNA(for.cbs$y, for.cbs$chromosome, for.cbs$x, data.type = "logratio", sampleid = "X")
