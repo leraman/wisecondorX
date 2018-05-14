@@ -70,7 +70,7 @@ def tool_newrefrrep(args):
     binsizes = set()
     logging.info('Importing data ...')
     for infile in args.infiles:  # glob.glob(args.infiles):
-        print('Loading:{}'.format(infile))
+        logging.info('Loading:{}'.format(infile))
         npzdata = np.load(infile)
         sample = npzdata['sample'].item()
         logging.info('binsize:{}'.format(int(npzdata['arguments'].item()['binsize'])))
@@ -149,7 +149,7 @@ def tool_newrefpost(args):
         big_indexes.extend(npzdata['indexes'])
         big_distances.extend(npzdata['distances'])
 
-        print("{}, {}".format(part, npzdata['indexes'].shape))
+        logging.info("{}, {}".format(part, npzdata['indexes'].shape))
 
     indexes = np.array(big_indexes)
     distances = np.array(big_distances)
