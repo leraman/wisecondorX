@@ -7,7 +7,7 @@ from scipy.stats import norm
 from wisecondorX.wisetools import *
 
 
-def toolConvert(args):
+def tool_convert(args):
     logging.info('Starting conversion')
     logging.info('Importing data ...')
     logging.info('Converting bam ... This might take a while ...')
@@ -21,7 +21,7 @@ def toolConvert(args):
     logging.info('Finished Conversion')
 
 
-def toolNewref(args):
+def tool_newref(args):
     logging.info('Creating new reference.')
 
     split_path = list(os.path.split(args.outfile))
@@ -34,7 +34,7 @@ def toolNewref(args):
     args.partfile = base_path + "_part"
     args.parts = args.cpus
 
-    toolNewrefPrep(args)
+    tool_newref_prep(args)
 
     # Use multiple cores if requested
     if args.cpus != 1:
@@ -45,16 +45,16 @@ def toolNewref(args):
                 if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
                     this_args = copy.copy(args)
                     this_args.part = [part, args.parts]
-                    executor.submit(toolNewrefPart, this_args)
+                    executor.submit(tool_newref_part, this_args)
             executor.shutdown(wait=True)
     else:
         for part in xrange(1, args.parts + 1):
             if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
                 args.part = [part, args.parts]
-                toolNewrefPart(args)
+                tool_newref_part(args)
 
     # Put it all together
-    toolNewrefPost(args)
+    tool_newref_post(args)
 
     # Remove parallel processing temp data
     os.remove(args.prepfile)
@@ -64,7 +64,7 @@ def toolNewref(args):
     logging.info("Finished creating reference.")
 
 
-def toolNewrefPrep(args):
+def tool_newref_prep(args):
     samples = []
     nreads = []
     binsizes = set()
@@ -107,7 +107,7 @@ def toolNewrefPrep(args):
                         pca_mean=pca.mean_)
 
 
-def toolNewrefPart(args):
+def tool_newref_part(args):
     if args.part[0] > args.part[1]:
         logging.error('Part should be smaller or equal to total parts:{} > {} is wrong')\
         .format(args.part[0], args.part[1])
@@ -132,7 +132,7 @@ def toolNewrefPart(args):
                         distances=distances)
 
 
-def toolNewrefPost(args):
+def tool_newref_post(args):
     # Load prep file data
     npzdata = np.load(args.prepfile)
     masked_chrom_bins = npzdata['maskedChromBins']
@@ -171,7 +171,7 @@ def toolNewrefPost(args):
                         gender=args.gender)
 
 
-def toolTest(args):
+def tool_test(args):
     wc_dir = os.path.realpath(__file__)
 
     time_at_start = datetime.datetime.now()
@@ -301,22 +301,7 @@ def toolTest(args):
     logging.info("Done!")
 
 
-def reformat(args):
-    original = np.load(args.infile)
-    sample_data = original['sample']
-    updated_sample_data = dict()
-    chrs = [str(x) for x in range(1, 23)]
-    chrs += ["X", "Y"]
-    i = 1
-    for chrom in chrs:
-        updated_sample_data[str(i)] = sample_data.item()[chrom]
-        i += 1
-
-    np.savez_compressed(args.outfile, arguments=original['arguments'], runtime=original['runtime'],
-                        sample=updated_sample_data, quality=original['quality'])
-
-
-def getGender(args):
+def get_gender(args):
     npzfile = np.load(args.infile)
     sample = npzfile['sample'].item()
     non_y = float(sum([np.sum(sample[str(chr)]) for chr in range(1, 24)]))
@@ -359,20 +344,7 @@ def main():
                                 type=int,
                                 default=4,
                                 help='Threshold for when a group of reads is considered a tower and will be removed.')
-    parser_convert.set_defaults(func=toolConvert)
-
-    # Reformat
-    parser_reformat = subparsers.add_parser('reformat',
-                                            description='Reformat a WISECONDOR convert npz '
-                                                        'to a wisecondorX convert npz',
-                                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser_reformat.add_argument('infile',
-                                 type=str,
-                                 help='.npz input file')
-    parser_reformat.add_argument('outfile',
-                                 type=str,
-                                 help='.npz output file')
-    parser_reformat.set_defaults(func=reformat)
+    parser_convert.set_defaults(func=tool_convert)
 
     # Find gender
     parser_gender = subparsers.add_parser('gender',
@@ -385,7 +357,7 @@ def main():
                                type=float,
                                default=3.5,
                                help='Y-read permille cut-off. Below is female, above is male.')
-    parser_gender.set_defaults(func=getGender)
+    parser_gender.set_defaults(func=get_gender)
 
     # New reference creation
     parser_newref = subparsers.add_parser('newref',
@@ -415,7 +387,7 @@ def main():
                                type=int,
                                default=1,
                                help='Use multiple cores to find reference bins')
-    parser_newref.set_defaults(func=toolNewref)
+    parser_newref.set_defaults(func=tool_newref)
 
     # Find CNAs
     parser_test = subparsers.add_parser('predict',
@@ -457,7 +429,7 @@ def main():
     parser_test.add_argument('--plot',
                              action="store_true",
                              help='Outputs .png plots')
-    parser_test.set_defaults(func=toolTest)
+    parser_test.set_defaults(func=tool_test)
 
     args = parser.parse_args(sys.argv[1:])
 

@@ -79,13 +79,6 @@ wisecondorX convert input.bam output.npz [--optional arguments]
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/convert.sh`
 
-##### Alternatively, convert (old) WISECONDOR .npz to WisecondorX .npz
-
-```bash
-
-wisecondorX reformat input.npz output.npz
-```
-
 ### Stage (2) Create reference
 
 ```bash
