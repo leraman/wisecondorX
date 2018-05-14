@@ -46,10 +46,10 @@ def get_runtime():
 
 def print_args(args):
     argdict = vars(args)
-    print 'tool =', str(argdict['func']).split()[1][4:]
+    logging.info('tool = {}'.format(str(argdict['func']).split()[1][4:]))
     for arg in sorted(argdict.keys()):
         if arg != 'func':
-            print arg, '=', argdict[arg]
+            logging.info('{} = {}'.format(arg,argdict[arg]))
 
 
 def load_cytobands(cyto_file):
