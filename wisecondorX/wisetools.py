@@ -623,7 +623,6 @@ def cbs(args, results_r, results_z, gender, wc_dir):
         logging.critical("Script {} failed with error {}".format(cbs_script,e))
         sys.exit()
 
-    subprocess.check_call(r_cmd)
     os.remove(json_cbs_temp_dir + "_01.json")
     cbs_data = json.load(open(json_cbs_temp_dir + "_02.json"))[1:]
     cbs_data = [[float(y.encode("utf-8")) for y in x] for x in cbs_data]
