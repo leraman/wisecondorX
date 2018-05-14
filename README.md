@@ -16,7 +16,10 @@ allowing daily diagnostic use. WisecondorX should be applicable not only to NIPT
 
 We found superior results through WisecondorX when using the following mapping and deduplication strategy.
 
-`bowtie2 --local -p 16 --fast-local -x index -U input | bamsormadup inputformat=sam threads=16 SO=coordinate outputformat=bam indexfilename=sample.bam.bai > sample.bam`
+```bash
+
+bowtie2 --local -p n --fast-local -x index -U input | bamsormadup inputformat=sam threads=n SO=coordinate outputformat=bam indexfilename=sample.bam.bai > sample.bam
+```
 
 I would recommend using the latest version of the human reference genome (GRCh38). Note that it is very important that **no** read
 quality filtering is executed prior the running WisecondorX: this software requires low-quality reads to distinguish informative
@@ -25,6 +28,7 @@ bins from non-informative ones.
 ## WisecondorX
 
 ### Installation
+
 WisecondorX can be installed using the python Setuptools library. To install use:
 ```bash
 
@@ -62,8 +66,11 @@ There are three main stages for using WisecondorX:
 
 ### Stage (1) Convert .bam to .npz
 
-`wisecondorX convert input.bam output.npz [-optional arguments]`  
-  
+```bash
+
+wisecondorX convert input.bam output.npz [--optional arguments]
+```
+
 <br>Optional argument<br><br> | Function
 :--- | :---  
 `--binsize x` | Size per bin in bp, the reference bin size should be a multiple of this value (default: x=5e3)  
@@ -74,12 +81,18 @@ There are three main stages for using WisecondorX:
 
 ##### Alternatively, convert (old) WISECONDOR .npz to WisecondorX .npz
 
-`wisecondorX reformat input.npz output.npz`
+```bash
+
+wisecondorX reformat input.npz output.npz
+```
 
 ### Stage (2) Create reference
 
-`wisecondorX newref reference_input_dir/*.npz reference_output.npz [-optional arguments]`  
-  
+```bash
+
+wisecondorX newref reference_input_dir/*.npz reference_output.npz [--optional arguments]
+```
+
 <br>Optional argument<br><br> | Function
 :--- | :---  
 `--gender x` | The gender of the samples at the `reference_input_dir`, female (F) or male (M) (default: x=F)  
@@ -91,7 +104,10 @@ There are three main stages for using WisecondorX:
 
 ##### When the gender is not known, WisecondorX can predict it
 
-`wisecondorX gender input.npz [-optional arguments]`  
+```bash
+
+wisecondorX gender input.npz [--optional arguments]
+```
 
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function
 :--- | :---  
@@ -99,7 +115,10 @@ There are three main stages for using WisecondorX:
 
 ### Stage (3) Predict CNAs  
 
-`wisecondorX predict test_input.npz reference_input.npz output_id [-optional arguments]`  
+```bash
+
+wisecondorX predict test_input.npz reference_input.npz output_id [--optional arguments]
+```
   
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
 :--- | :---  
@@ -118,14 +137,14 @@ There are three main stages for using WisecondorX:
 # Parameters
 
 The default parameters are optimized for shallow whole-genome sequencing data (0.1x - 1x depth; sWGS) and reference bin sizes 
-ranging from 50 to 200 kb. When increasing the reference bin size (`-binsize`), I recommend lowering the reference locations 
-per target (`-refsize`) and the minimum amount of sensible reference bins per target bin (`-minrefbins`). Further note that a
+ranging from 50 to 200 kb. When increasing the reference bin size (`--binsize`), I recommend lowering the reference locations 
+per target (`--refsize`) and the minimum amount of sensible reference bins per target bin (`--minrefbins`). Further note that a
 reference bin size lower than 15 kb is not advisable, unless a higher sequencing depth was used.  
 **Important note**  
-Concerning the vast majority of applications, the `-alpha` parameter should not be tweaked. The `-beta` parameter on the contrary
+Concerning the vast majority of applications, the `--alpha` parameter should not be tweaked. The `--beta` parameter on the contrary
 should depend on your type of analysis. For NIPT, its default value should be fine. However, for gDNA, when mosaicisms are of no interest,
 it could be increased to its maximum, being 1. When the fetal (NIPT) or tumor (LQB, fresh material, FFPE, ...) fraction is known, this parameter is optimally
-close to this fraction. If you have any doubts about this argument, a default `-beta` should still be fine when a good and large reference set was created,
+close to this fraction. If you have any doubts about this argument, a default `--beta` should still be fine when a good and large reference set was created,
 irrespective the type of analysis.  
 
 # Underlying algorithm
