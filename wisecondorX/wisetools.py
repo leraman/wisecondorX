@@ -612,8 +612,8 @@ def cbs(args, results_r, results_z, gender, wc_dir):
         sexchrom = "X"
     r_cmd = ["Rscript", cbs_script,
              "--infile", "{}_01.json".format(json_cbs_temp_dir),
-             "--outfile", "{}_02.json".format(json_cbs_temp_dir)
-             "--sexchroms", sexchrom
+             "--outfile", "{}_02.json".format(json_cbs_temp_dir),
+             "--sexchroms", sexchrom,
              "--alpha", str(args.alpha)]
     logging.debug("CBS cmd: {}".format(r_cmd))
 
