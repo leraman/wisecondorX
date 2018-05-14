@@ -7,6 +7,7 @@ import math
 import os
 import socket
 import sys
+import subprocess
 import time
 # Get rid of some useless warnings, I know there are emtpy slices
 import warnings
@@ -547,8 +548,18 @@ def write_plots(args, json_out, wc_dir, gender):
         sexchrom = "XY"
     else:
         sexchrom = "X"
-    os.popen("Rscript \"" + plot_script + "\" --infile \"" + args.outid + "_plot_tmp.json\" --outdir \"" +
-             args.outid + ".plots\"" + " --sexchroms " + sexchrom + " --beta " + str(args.beta))
+    r_cmd = ["Rscript", plot_script,
+             "--infile", "{}_plot_tmp.json".format(args.outid),
+             "--outdir", args.outid + ".plots",
+             "--sexchroms", sexchrom,
+             "--beta",str(args.beta)]
+    logging.debug("plot cmd: {}".format(r_cmd))
+
+    try:
+        subprocess.check_call(r_cmd)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Script {} failed with error {}".format(plot_script,e))
+        sys.exit()
 
     os.remove(args.outid + "_plot_tmp.json")
 
@@ -599,10 +610,20 @@ def cbs(args, results_r, results_z, gender, wc_dir):
         sexchrom = "XY"
     else:
         sexchrom = "X"
+    r_cmd = ["Rscript", cbs_script,
+             "--infile", "{}_01.json".format(json_cbs_temp_dir),
+             "--outfile", "{}_02.json".format(json_cbs_temp_dir)
+             "--sexchroms", sexchrom
+             "--alpha", str(args.alpha)]
+    logging.debug("CBS cmd: {}".format(r_cmd))
 
-    os.popen(
-        "Rscript \"" + cbs_script + "\" --infile \"" + json_cbs_temp_dir + "_01.json\" --outfile \"" +
-        json_cbs_temp_dir + "_02.json\"" + " --sexchroms " + sexchrom + " --alpha " + str(args.alpha))
+    try:
+        subprocess.check_call(r_cmd)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Script {} failed with error {}".format(cbs_script,e))
+        sys.exit()
+
+    subprocess.check_call(r_cmd)
     os.remove(json_cbs_temp_dir + "_01.json")
     cbs_data = json.load(open(json_cbs_temp_dir + "_02.json"))[1:]
     cbs_data = [[float(y.encode("utf-8")) for y in x] for x in cbs_data]
