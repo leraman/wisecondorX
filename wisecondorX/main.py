@@ -7,7 +7,7 @@ from scipy.stats import norm
 from wisecondorX.wisetools import *
 
 
-def tool_convert(args):
+def toolConvert(args):
     logging.info('Starting conversion')
     logging.info('Importing data ...')
     logging.info('Converting bam ... This might take a while ...')
@@ -21,7 +21,7 @@ def tool_convert(args):
     logging.info('Finished Conversion')
 
 
-def tool_newref(args):
+def toolNewref(args):
     logging.info('Creating new reference.')
 
     split_path = list(os.path.split(args.outfile))
@@ -34,7 +34,7 @@ def tool_newref(args):
     args.partfile = base_path + "_part"
     args.parts = args.cpus
 
-    tool_newrefrrep(args)
+    toolNewrefPrep(args)
 
     # Use multiple cores if requested
     if args.cpus != 1:
@@ -45,16 +45,16 @@ def tool_newref(args):
                 if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
                     this_args = copy.copy(args)
                     this_args.part = [part, args.parts]
-                    executor.submit(tool_newrefpart, this_args)
+                    executor.submit(toolNewrefPart, this_args)
             executor.shutdown(wait=True)
     else:
         for part in xrange(1, args.parts + 1):
             if not os.path.isfile(args.partfile + "_" + str(part) + ".npz"):
                 args.part = [part, args.parts]
-                tool_newrefpart(args)
+                toolNewrefPart(args)
 
     # Put it all together
-    tool_newrefpost(args)
+    toolNewrefPost(args)
 
     # Remove parallel processing temp data
     os.remove(args.prepfile)
@@ -64,7 +64,7 @@ def tool_newref(args):
     logging.info("Finished creating reference.")
 
 
-def tool_newrefrrep(args):
+def toolNewrefPrep(args):
     samples = []
     nreads = []
     binsizes = set()
@@ -81,6 +81,7 @@ def tool_newrefrrep(args):
     if args.binsize is None and len(binsizes) != 1:
         logging.error('There appears to be a mismatch in binsizes in your dataset: {} \n'
                       'Either remove the offending sample or use -binsize to scale all samples'.format(binsizes))
+        sys.exit()
 
     binsize = args.binsize
     if args.binsize is None:
@@ -106,12 +107,14 @@ def tool_newrefrrep(args):
                         pca_mean=pca.mean_)
 
 
-def tool_newrefpart(args):
+def toolNewrefPart(args):
     if args.part[0] > args.part[1]:
         logging.error('Part should be smaller or equal to total parts:{} > {} is wrong')\
         .format(args.part[0], args.part[1])
+        sys.exit()
     if args.part[0] < 0:
         logging.error('Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
+        sys.exit()
 
     npzdata = np.load(args.prepfile)
     corrected_data = npzdata['correctedData']
@@ -129,7 +132,7 @@ def tool_newrefpart(args):
                         distances=distances)
 
 
-def tool_newrefpost(args):
+def toolNewrefPost(args):
     # Load prep file data
     npzdata = np.load(args.prepfile)
     masked_chrom_bins = npzdata['maskedChromBins']
@@ -168,7 +171,7 @@ def tool_newrefpost(args):
                         gender=args.gender)
 
 
-def tool_test(args):
+def toolTest(args):
     wc_dir = os.path.realpath(__file__)
 
     time_at_start = datetime.datetime.now()
@@ -181,9 +184,11 @@ def tool_test(args):
 
     if not args.bed and not args.plot:
         logging.error("No output format selected. \nSelect at least one of the supported output formats (-bed, -plot)")
+        sys.exit()
 
     if args.beta <= 0 or args.beta > 1:
         logging.error("Parameter beta should be a strictly positive number lower than 1")
+        sys.exit()
 
     if args.beta < 0.05:
         logging.warning("Parameter beta seems to be a bit low. \n"
@@ -311,7 +316,7 @@ def reformat(args):
                         sample=updated_sample_data, quality=original['quality'])
 
 
-def get_gender(args):
+def getGender(args):
     npzfile = np.load(args.infile)
     sample = npzfile['sample'].item()
     non_y = float(sum([np.sum(sample[str(chr)]) for chr in range(1, 24)]))
@@ -354,7 +359,7 @@ def main():
                                 type=int,
                                 default=4,
                                 help='Threshold for when a group of reads is considered a tower and will be removed.')
-    parser_convert.set_defaults(func=tool_convert)
+    parser_convert.set_defaults(func=toolConvert)
 
     # Reformat
     parser_reformat = subparsers.add_parser('reformat',
@@ -380,7 +385,7 @@ def main():
                                type=float,
                                default=3.5,
                                help='Y-read permille cut-off. Below is female, above is male.')
-    parser_gender.set_defaults(func=get_gender)
+    parser_gender.set_defaults(func=getGender)
 
     # New reference creation
     parser_newref = subparsers.add_parser('newref',
@@ -410,7 +415,7 @@ def main():
                                type=int,
                                default=1,
                                help='Use multiple cores to find reference bins')
-    parser_newref.set_defaults(func=tool_newref)
+    parser_newref.set_defaults(func=toolNewref)
 
     # Find CNAs
     parser_test = subparsers.add_parser('predict',
@@ -452,7 +457,7 @@ def main():
     parser_test.add_argument('--plot',
                              action="store_true",
                              help='Outputs .png plots')
-    parser_test.set_defaults(func=tool_test)
+    parser_test.set_defaults(func=toolTest)
 
     args = parser.parse_args(sys.argv[1:])
 

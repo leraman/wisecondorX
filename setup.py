@@ -5,7 +5,7 @@ version = '0.1.3'
 dl_version = 'master' if 'dev' in version else '{}'.format(version)
 
 setup(
-    name='WiseCondorX',
+    name='WisecondorX',
     version=version,
     author='Matthias De Smet, Lennart Raman',
     author_email='Lennart.raman@ugent.be',
@@ -26,7 +26,7 @@ setup(
         'numpy'
     ],
     entry_points={
-        'console_scripts': ['wisecondorX = wisecondorX.main:main']
+        'console_scripts': ['WisecondorX = WisecondorX.main:main']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',
