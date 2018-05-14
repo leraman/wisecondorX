@@ -24,6 +24,21 @@ bins from non-informative ones.
 
 ## WisecondorX
 
+### Installation
+WisecondorX can be installed using the python Setuptools library. To install use:
+```bash
+
+python setup.py install
+```
+
+Alternatively, stable releases can be installed using [Conda](https://conda.io/docs/). This is the preferred option since Conda takes care of other dependencies too.
+```bash
+
+conda install -c bioconda wisecondorX
+```
+
+### Running wisecondorX
+
 There are three main stages for using WisecondorX:
 - Converting .bam files to .npz files (both reference and test samples)
 - Creating a reference (using reference .npz files)  
@@ -47,54 +62,54 @@ There are three main stages for using WisecondorX:
 
 ### Stage (1) Convert .bam to .npz
 
-`python2 wisecondorX.py convert input.bam output.npz [-optional arguments]`  
+`wisecondorX convert input.bam output.npz [-optional arguments]`  
   
 <br>Optional argument<br><br> | Function
 :--- | :---  
-`-binsize x` | Size per bin in bp, the reference bin size should be a multiple of this value (default: x=5e3)  
-`-retdist x` | Max amount of bp's between reads to consider them part of the same tower (default: x=4)  
-`-retthres x` | Threshold for a group of reads to be considered a tower. These will be removed (default: x=4)  
+`--binsize x` | Size per bin in bp, the reference bin size should be a multiple of this value (default: x=5e3)  
+`--retdist x` | Max amount of bp's between reads to consider them part of the same tower (default: x=4)  
+`--retthres x` | Threshold for a group of reads to be considered a tower. These will be removed (default: x=4)  
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/convert.sh`
 
 ##### Alternatively, convert (old) WISECONDOR .npz to WisecondorX .npz
 
-`python2 wisecondorX.py reformat input.npz output.npz`
+`wisecondorX reformat input.npz output.npz`
 
 ### Stage (2) Create reference
 
-`python2 wisecondorX.py newref reference_input_dir/*.npz reference_output.npz [-optional arguments]`  
+`wisecondorX newref reference_input_dir/*.npz reference_output.npz [-optional arguments]`  
   
 <br>Optional argument<br><br> | Function
 :--- | :---  
-`-gender x` | The gender of the samples at the `reference_input_dir`, female (F) or male (M) (default: x=F)  
-`-binsize x` | Size per bin in bp, defines the resolution of the output (default: x=1e5)  
-`-refsize x` | Amount of reference locations per target (default: x=300)  
-`-cpus x` | Number of threads requested (default: x=1)  
+`--gender x` | The gender of the samples at the `reference_input_dir`, female (F) or male (M) (default: x=F)  
+`--binsize x` | Size per bin in bp, defines the resolution of the output (default: x=1e5)  
+`--refsize x` | Amount of reference locations per target (default: x=300)  
+`--cpus x` | Number of threads requested (default: x=1)  
 
 &rarr; Bash recipe (example for NIPT) at `./pipeline/newref.sh`
 
 ##### When the gender is not known, WisecondorX can predict it
 
-`python2 wisecondorX.py gender input.npz [-optional arguments]`  
+`wisecondorX gender input.npz [-optional arguments]`  
 
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function
 :--- | :---  
-`-cutoff x` | Y-read permille cut-off: above is male, below is female. Note that for NIPT, this will always return 'female' (default: x=3.5; optimized for mapping as [described above](#mapping))  
+`--cutoff x` | Y-read permille cut-off: above is male, below is female. Note that for NIPT, this will always return 'female' (default: x=3.5; optimized for mapping as [described above](#mapping))  
 
 ### Stage (3) Predict CNAs  
 
-`python2 wisecondorX.py predict test_input.npz reference_input.npz output_id [-optional arguments]`  
+`wisecondorX predict test_input.npz reference_input.npz output_id [-optional arguments]`  
   
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
 :--- | :---  
-`-minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
-`-maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=4)  
-`-alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
-`-beta x` | Number between 0 and 1, defines the linear trade-off between sensitivity and specificity for aberration calling. If beta=0, all segments will be called as aberrations. If beta=1, the cut-off (at copy number 1.5 and 2.5) is optimized to capture all constitutional aberrations (default: x=0.1)  
-`-blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
-`-bed` | Outputs tab-delimited .bed files (trisomy 21 NIPT example at `./example.bed`), containing all necessary information  **(\*)**
-`-plot` | Outputs custom .png plots (trisomy 21 NIPT example at `./example.plot`), directly interpretable  **(\*)**  
+`--minrefbins x` | Minimum amount of sensible reference bins per target bin (default: x=150)  
+`--maskrepeats x` | Regions with distances > mean + sd * 3 in the reference will be masked, number of masking cycles (default: x=4)  
+`--alpha x` | P-value cut-off for calling a CBS breakpoint (default: x=1e-4)  
+`--beta x` | Number between 0 and 1, defines the linear trade-off between sensitivity and specificity for aberration calling. If beta=0, all segments will be called as aberrations. If beta=1, the cut-off (at copy number 1.5 and 2.5) is optimized to capture all constitutional aberrations (default: x=0.1)  
+`--blacklist x` | Blacklist that masks additional regions in output, requires header-less .bed file. This is particularly useful when the reference set is a too small to recognize some obvious regions (such as centromeres; example at `./blacklist/centromere.hg38.txt`) (default: x=None)  
+`--bed` | Outputs tab-delimited .bed files (trisomy 21 NIPT example at `./example.bed`), containing all necessary information  **(\*)**
+`--plot` | Outputs custom .png plots (trisomy 21 NIPT example at `./example.plot`), directly interpretable  **(\*)**  
 
 <sup>**(\*)** At least one of these output formats should be selected</sup>  
 
