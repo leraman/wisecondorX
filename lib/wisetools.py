@@ -6,15 +6,13 @@ import os
 import sys
 import subprocess
 import time
-
-import warnings
-warnings.filterwarnings('ignore', 'Mean of empty slice')
-warnings.filterwarnings('ignore', 'Degrees of freedom <= 0 for slice')
-
 import pysam
 from sklearn.decomposition import PCA
-
 from lib.triarray import *
+import warnings
+
+warnings.filterwarnings('ignore', 'Mean of empty slice')
+warnings.filterwarnings('ignore', 'Degrees of freedom <= 0 for slice')
 
 np.seterr('ignore')
 np_sum = np.sum
@@ -27,6 +25,7 @@ np_abs = np.abs
 np_sqrt = np.sqrt
 
 find_pos = bisect.bisect
+
 
 def load_cytobands(cyto_file):
     cyto_dict = dict()
@@ -99,7 +98,8 @@ def convert_bam(bamfile, binsize=100000, min_shift=4, threshold=6, mapq=1, deman
         if chrom_name not in chromosomes and chrom_name != "X" and chrom_name != "Y":
             continue
 
-        logging.info('Working at {}; processing {} bins'.format(chrom, int(sam_file.lengths[index] / float(binsize) + 1)))
+        logging.info('Working at {}; processing {} bins'
+                     .format(chrom, int(sam_file.lengths[index] / float(binsize) + 1)))
         counts = np.zeros(int(sam_file.lengths[index] / float(binsize) + 1), dtype=np.int32)
 
         read_buff = []
@@ -294,7 +294,6 @@ def get_optimal_cutoff(reference, chromosome_sizes, repeats):
 
     autosome_ref = reference[:autosome_len]
     autosome_cutoff = float("inf")
-    mask = np.zeros(autosome_ref.shape)
     for i in range(0, repeats):
         mask = autosome_ref < autosome_cutoff
         average = np.average(autosome_ref[mask])
@@ -303,7 +302,6 @@ def get_optimal_cutoff(reference, chromosome_sizes, repeats):
 
     allosome_ref = reference[autosome_len:]
     allosome_cutoff = float("inf")
-    mask = np.zeros(allosome_ref.shape)
     for i in range(0, repeats):
         mask = allosome_ref < allosome_cutoff
         average = np.average(allosome_ref[mask])
@@ -365,7 +363,7 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums,
         chrom_data = np.concatenate((corrected_data[:chromosome_bin_sums[chrom] - chromosome_bins[chrom], :],
                                     corrected_data[chromosome_bin_sums[chrom]:, :]))
 
-        x_length = chromosome_bin_sums[22] - (chromosome_bin_sums[22] - chromosome_bins[22])  #index 22 -> chrX
+        x_length = chromosome_bin_sums[22] - (chromosome_bin_sums[22] - chromosome_bins[22])  # index 22 -> chrX
 
         if gender == "M":
             y_length = chromosome_bin_sums[23] - (chromosome_bin_sums[23] - chromosome_bins[23])
@@ -527,13 +525,13 @@ def write_plots(args, json_out, wc_dir, gender):
              "--infile", "{}_plot_tmp.json".format(args.outid),
              "--outdir", args.outid + ".plots",
              "--sexchroms", sexchrom,
-             "--beta",str(args.beta)]
+             "--beta", str(args.beta)]
     logging.debug("plot cmd: {}".format(r_cmd))
 
     try:
         subprocess.check_call(r_cmd)
     except subprocess.CalledProcessError as e:
-        logging.critical("Script {} failed with error {}".format(plot_script,e))
+        logging.critical("Script {} failed with error {}".format(plot_script, e))
         sys.exit()
 
     os.remove(args.outid + "_plot_tmp.json")
@@ -595,7 +593,7 @@ def cbs(args, results_r, results_z, gender, wc_dir):
     try:
         subprocess.check_call(r_cmd)
     except subprocess.CalledProcessError as e:
-        logging.critical("Script {} failed with error {}".format(cbs_script,e))
+        logging.critical("Script {} failed with error {}".format(cbs_script, e))
         sys.exit()
 
     os.remove(json_cbs_temp_dir + "_01.json")

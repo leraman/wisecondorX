@@ -77,7 +77,7 @@ def tool_newref_prep(args):
 
     if args.binsize is None and len(binsizes) != 1:
         logging.critical('There appears to be a mismatch in binsizes in your dataset: {} \n\t'
-                      'Either remove the offending sample(s) or use a different --binsize'.format(binsizes))
+                         'Either remove the offending sample(s) or use a different --binsize'.format(binsizes))
         sys.exit()
 
     binsize = args.binsize
@@ -104,11 +104,11 @@ def tool_newref_prep(args):
 
 def tool_newref_part(args):
     if args.part[0] > args.part[1]:
-        logging.critical('Part should be smaller or equal to total parts:{} > {} is wrong')\
-        .format(args.part[0], args.part[1])
+        logging.critical('Part should be smaller or equal to total parts:{} > {} is wrong'
+                         .format(args.part[0], args.part[1]))
         sys.exit()
     if args.part[0] < 0:
-        logging.critical('Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
+        logging.critical('Part should be at least zero: {} < 0 is wrong'.format(args.part[0]))
         sys.exit()
 
     npzdata = np.load(args.prepfile)
@@ -172,7 +172,8 @@ def tool_test(args):
     sample_file = np.load(args.infile)
 
     if not args.bed and not args.plot:
-        logging.critical("No output format selected. \n\tSelect at least one of the supported output formats (-bed, -plot)")
+        logging.critical("No output format selected. \n\t"
+                         "Select at least one of the supported output formats (-bed, -plot)")
         sys.exit()
 
     if args.beta <= 0 or args.beta > 1:
@@ -310,13 +311,13 @@ def main():
     parser.add_argument('--loglevel',
                         type=str,
                         default='INFO',
-                        choices=['info', 'warning' , 'debug', 'error', 'critical'])
+                        choices=['info', 'warning', 'debug', 'error', 'critical'])
     subparsers = parser.add_subparsers()
 
     # File conversion
     parser_convert = subparsers.add_parser('convert',
                                            description='Convert and filter a .bam file to a .npz',
-                                           formatter_class = argparse.ArgumentDefaultsHelpFormatter)
+                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_convert.add_argument('infile',
                                 type=str,
                                 help='Bam input file for conversion')
