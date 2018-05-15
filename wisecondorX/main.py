@@ -7,6 +7,9 @@ from scipy.stats import norm
 from wisecondorX.wisetools import *
 
 
+def toolConvert(args): # enabling use of older npz's
+    tool_convert(args)
+
 def tool_convert(args):
     logging.info('Starting conversion')
     logging.info('Importing data ...')
@@ -79,7 +82,7 @@ def tool_newref_prep(args):
         binsizes.add(npzdata['arguments'].item()['binsize'])
 
     if args.binsize is None and len(binsizes) != 1:
-        logging.error('There appears to be a mismatch in binsizes in your dataset: {} \n'
+        logging.critical('There appears to be a mismatch in binsizes in your dataset: {} \n'
                       'Either remove the offending sample or use -binsize to scale all samples'.format(binsizes))
         sys.exit()
 
@@ -109,11 +112,11 @@ def tool_newref_prep(args):
 
 def tool_newref_part(args):
     if args.part[0] > args.part[1]:
-        logging.error('Part should be smaller or equal to total parts:{} > {} is wrong')\
+        logging.critical('Part should be smaller or equal to total parts:{} > {} is wrong')\
         .format(args.part[0], args.part[1])
         sys.exit()
     if args.part[0] < 0:
-        logging.error('Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
+        logging.critical('Part should be at least zero:', args.part[0], '<', 0, 'is wrong')
         sys.exit()
 
     npzdata = np.load(args.prepfile)
@@ -183,11 +186,11 @@ def tool_test(args):
     sample_file = np.load(args.infile)
 
     if not args.bed and not args.plot:
-        logging.error("No output format selected. \nSelect at least one of the supported output formats (-bed, -plot)")
+        logging.critical("No output format selected. \nSelect at least one of the supported output formats (-bed, -plot)")
         sys.exit()
 
     if args.beta <= 0 or args.beta > 1:
-        logging.error("Parameter beta should be a strictly positive number lower than 1")
+        logging.critical("Parameter beta should be a strictly positive number lower than 1")
         sys.exit()
 
     if args.beta < 0.05:

@@ -81,7 +81,9 @@ for (chr in chrs){
         remove.this <- c(remove.this, check.this)
     }
 }
-for.cbs <- for.cbs[-remove.this,]
+if (length(remove.this != 0)){
+    for.cbs <- for.cbs[-remove.this,]
+}
 
 # CBS
 
