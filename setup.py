@@ -9,7 +9,7 @@ setup(
     version=version,
     author='Matthias De Smet, Lennart Raman',
     author_email='Lennart.raman@ugent.be',
-    description="WIthin-SamplE COpy Number aberration DetectOR, including sex chromosomes",
+    description="WisecondorX -- an evolved WISECONDOR",
     long_description=__doc__,
     keywords=['bioinformatics', 'biology', 'sequencing', 'NGS', 'next generation sequencing'
               , 'CNV', 'SWGS', 'Shallow Whole Genome Sequencing'],
@@ -26,7 +26,7 @@ setup(
         'numpy'
     ],
     entry_points={
-        'console_scripts': ['wisecondorX = wisecondorX.main:main']
+        'console_scripts': ['WisecondorX = lib.main:main']
     },
     classifiers=[
         'Development Status :: 3 - Alpha',

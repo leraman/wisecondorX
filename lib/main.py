@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
 import argparse
-import logging
-import sys
 from scipy.stats import norm
-from wisecondorX.wisetools import *
+from lib.wisetools import *
 
-
-def toolConvert(args): # enabling use of older npz's
-    tool_convert(args)
 
 def tool_convert(args):
     logging.info('Starting conversion')
@@ -17,15 +12,14 @@ def tool_convert(args):
     converted, qual_info = convert_bam(args.infile, binsize=args.binsize,
                                        min_shift=args.retdist, threshold=args.retthres)
     np.savez_compressed(args.outfile,
-                        arguments=vars(args),
-                        runtime=get_runtime(),
+                        binsize=args.binsize,
                         sample=converted,
                         quality=qual_info)
-    logging.info('Finished Conversion')
+    logging.info('Finished conversion')
 
 
 def tool_newref(args):
-    logging.info('Creating new reference.')
+    logging.info('Creating new reference')
 
     split_path = list(os.path.split(args.outfile))
     if split_path[-1][-4:] == '.npz':
@@ -64,7 +58,7 @@ def tool_newref(args):
     for part in xrange(1, args.parts + 1):
         os.remove(args.partfile + '_' + str(part) + '.npz')
 
-    logging.info("Finished creating reference.")
+    logging.info("Finished creating reference")
 
 
 def tool_newref_prep(args):
@@ -76,14 +70,14 @@ def tool_newref_prep(args):
         logging.info('Loading:{}'.format(infile))
         npzdata = np.load(infile)
         sample = npzdata['sample'].item()
-        logging.info('binsize:{}'.format(int(npzdata['arguments'].item()['binsize'])))
-        samples.append(scale_sample(sample, npzdata['arguments'].item()['binsize'], args.binsize))
+        logging.info('binsize:{}'.format(int(npzdata['binsize'].item())))
+        samples.append(scale_sample(sample, npzdata['binsize'].item(), args.binsize))
         nreads.append(sum([sum(sample[x]) for x in sample.keys()]))
-        binsizes.add(npzdata['arguments'].item()['binsize'])
+        binsizes.add(npzdata['binsize'].item())
 
     if args.binsize is None and len(binsizes) != 1:
-        logging.critical('There appears to be a mismatch in binsizes in your dataset: {} \n'
-                      'Either remove the offending sample or use -binsize to scale all samples'.format(binsizes))
+        logging.critical('There appears to be a mismatch in binsizes in your dataset: {} \n\t'
+                      'Either remove the offending sample(s) or use a different --binsize'.format(binsizes))
         sys.exit()
 
     binsize = args.binsize
@@ -97,15 +91,13 @@ def tool_newref_prep(args):
     masked_chrom_bin_sums = [sum(masked_chrom_bins[:x + 1]) for x in range(len(masked_chrom_bins))]
     corrected_data, pca = train_pca(masked_data)
     np.savez_compressed(args.prepfile,
-                        arguments=vars(args),
-                        runtime=get_runtime(),
                         binsize=binsize,
-                        chromosomeBins=chromosome_bins,
-                        maskedData=masked_data,
+                        chromosome_bins=chromosome_bins,
+                        masked_data=masked_data,
                         mask=mask,
-                        maskedChromBins=masked_chrom_bins,
-                        maskedChromBinSums=masked_chrom_bin_sums,
-                        correctedData=corrected_data,
+                        masked_chrom_bins=masked_chrom_bins,
+                        masked_chrom_bin_sums=masked_chrom_bin_sums,
+                        corrected_data=corrected_data,
                         pca_components=pca.components_,
                         pca_mean=pca.mean_)
 
@@ -120,17 +112,15 @@ def tool_newref_part(args):
         sys.exit()
 
     npzdata = np.load(args.prepfile)
-    corrected_data = npzdata['correctedData']
-    masked_chrom_bins = npzdata['maskedChromBins']
-    masked_chrom_bin_sums = npzdata['maskedChromBinSums']
+    corrected_data = npzdata['corrected_data']
+    masked_chrom_bins = npzdata['masked_chrom_bins']
+    masked_chrom_bin_sums = npzdata['masked_chrom_bin_sums']
 
     logging.info('Creating reference ... This might take a while ...')
     indexes, distances = get_reference(corrected_data, masked_chrom_bins, masked_chrom_bin_sums, args.gender,
                                        select_ref_amount=args.refsize, part=args.part[0], split_parts=args.part[1])
 
     np.savez_compressed(args.partfile + '_' + str(args.part[0]) + '.npz',
-                        arguments=vars(args),
-                        runtime=get_runtime(),
                         indexes=indexes,
                         distances=distances)
 
@@ -138,7 +128,7 @@ def tool_newref_part(args):
 def tool_newref_post(args):
     # Load prep file data
     npzdata = np.load(args.prepfile)
-    masked_chrom_bins = npzdata['maskedChromBins']
+    masked_chrom_bins = npzdata['masked_chrom_bins']
     chromosome_bins = npzdata['chromosome_bins']
     mask = npzdata['mask']
     pca_components = npzdata['pca_components']
@@ -161,8 +151,6 @@ def tool_newref_post(args):
     distances = np.array(big_distances)
 
     np.savez_compressed(args.outfile,
-                        arguments=vars(args),
-                        runtime=get_runtime(),
                         binsize=binsize,
                         indexes=indexes,
                         distances=distances,
@@ -175,26 +163,32 @@ def tool_newref_post(args):
 
 
 def tool_test(args):
-    wc_dir = os.path.realpath(__file__)
+    logging.info('Starting CNA prediction')
 
-    time_at_start = datetime.datetime.now()
-    start_time = [time_at_start.year, time_at_start.month, time_at_start.day,
-                  time_at_start.hour, time_at_start.minute, time_at_start.second]
+    wc_dir = os.path.realpath(__file__)
 
     logging.info('Importing data ...')
     reference_file = np.load(args.reference)
     sample_file = np.load(args.infile)
 
     if not args.bed and not args.plot:
-        logging.critical("No output format selected. \nSelect at least one of the supported output formats (-bed, -plot)")
+        logging.critical("No output format selected. \n\tSelect at least one of the supported output formats (-bed, -plot)")
         sys.exit()
 
     if args.beta <= 0 or args.beta > 1:
         logging.critical("Parameter beta should be a strictly positive number lower than 1")
         sys.exit()
 
+    if args.alpha <= 0 or args.alpha > 1:
+        logging.critical("Parameter alpha should be a strictly positive number lower than 1")
+        sys.exit()
+
     if args.beta < 0.05:
-        logging.warning("Parameter beta seems to be a bit low. \n"
+        logging.warning("Parameter beta seems to be a bit low. \n\t"
+                        "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?")
+
+    if args.alpha > 0.1:
+        logging.warning("Parameter alpha seems to be a bit high. \n\t"
                         "Have you read https://github.com/leraman/wisecondorX#parameters on parameter optimization?")
 
     # Reference data handling
@@ -220,7 +214,7 @@ def tool_test(args):
 
     logging.info('Applying between-sample normalization ...')
     nreads = sum([sum(sample[x]) for x in sample.keys()])
-    sample_bin_size = sample_file['arguments'].item()['binsize']
+    sample_bin_size = sample_file['binsize'].item()
     sample = scale_sample(sample, sample_bin_size, binsize)
 
     test_data = to_numpy_ref_format(sample, chromosome_sizes, mask, gender)
@@ -277,10 +271,6 @@ def tool_test(args):
     logging.info('Obtaining CBS segments ...')
     cbs_calls = cbs(args, results_r, results_z, gender, wc_dir)
 
-    time_at_end = datetime.datetime.now()
-    end_time = [time_at_end.year, time_at_end.month, time_at_end.day,
-                time_at_end.hour, time_at_end.minute, time_at_end.second]
-
     json_out = {'binsize': binsize,
                 'results_r': results_r,
                 'results_z': results_z,
@@ -288,7 +278,6 @@ def tool_test(args):
                 'asdef': std_dev_avg.tolist(),
                 'aasdef': (std_dev_avg * z_threshold).tolist(),
                 'nreads': nreads,
-                'runtime': [start_time, end_time],
                 'cbs_calls': cbs_calls}
 
     # Save txt: optional
@@ -301,7 +290,7 @@ def tool_test(args):
         logging.info('Writing plots ...')
         write_plots(args, json_out, wc_dir, gender)
 
-    logging.info("Done!")
+    logging.info("Finished prediction")
 
 
 def get_gender(args):

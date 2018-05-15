@@ -1,27 +1,20 @@
 import bisect
-import datetime
-import getpass
 import json
 import logging
 import math
 import os
-import socket
 import sys
 import subprocess
 import time
-# Get rid of some useless warnings, I know there are emtpy slices
+
 import warnings
-
-import pysam
-from sklearn.decomposition import PCA
-from sklearn.utils.extmath import fast_dot
-
-from triarray import *
-
 warnings.filterwarnings('ignore', 'Mean of empty slice')
 warnings.filterwarnings('ignore', 'Degrees of freedom <= 0 for slice')
 
-curTime = datetime.datetime.now()
+import pysam
+from sklearn.decomposition import PCA
+
+from lib.triarray import *
 
 np.seterr('ignore')
 np_sum = np.sum
@@ -34,23 +27,6 @@ np_abs = np.abs
 np_sqrt = np.sqrt
 
 find_pos = bisect.bisect
-
-
-def get_runtime():
-    runtime = dict()
-    runtime['datetime'] = curTime
-    runtime['hostname'] = socket.gethostname()
-    runtime['username'] = getpass.getuser()
-    return runtime
-
-
-def print_args(args):
-    argdict = vars(args)
-    logging.info('tool = {}'.format(str(argdict['func']).split()[1][4:]))
-    for arg in sorted(argdict.keys()):
-        if arg != 'func':
-            logging.info('{} = {}'.format(arg,argdict[arg]))
-
 
 def load_cytobands(cyto_file):
     cyto_dict = dict()
@@ -87,7 +63,7 @@ def apply_pca(sample_data, mean, components):
 
     transform = pca.transform(np.array([sample_data]))
 
-    reconstructed = fast_dot(transform, pca.components_) + pca.mean_
+    reconstructed = np.dot(transform, pca.components_) + pca.mean_
     reconstructed = reconstructed[0]
     return sample_data / reconstructed
 
@@ -123,8 +99,7 @@ def convert_bam(bamfile, binsize=100000, min_shift=4, threshold=6, mapq=1, deman
         if chrom_name not in chromosomes and chrom_name != "X" and chrom_name != "Y":
             continue
 
-        logging.info('length: {}, bins: {}'.format(
-            chrom, sam_file.lengths[index], int(sam_file.lengths[index] / float(binsize) + 1)))
+        logging.info('Working at {}; processing {} bins'.format(chrom, int(sam_file.lengths[index] / float(binsize) + 1)))
         counts = np.zeros(int(sam_file.lengths[index] / float(binsize) + 1), dtype=np.int32)
 
         read_buff = []
@@ -201,7 +176,7 @@ def scale_sample(sample, from_size, to_size):
         return sample
 
     if to_size == 0 or from_size == 0 or to_size < from_size or to_size % from_size > 0:
-        logging.error("Impossible binsize scaling requested: {} to {}".format(from_size, to_size))
+        logging.error("Impossible binsize scaling requested: {} to {}".format(int(from_size), int(to_size)))
         sys.exit()
 
     return_sample = dict()
@@ -390,7 +365,7 @@ def get_reference(corrected_data, chromosome_bins, chromosome_bin_sums,
         chrom_data = np.concatenate((corrected_data[:chromosome_bin_sums[chrom] - chromosome_bins[chrom], :],
                                     corrected_data[chromosome_bin_sums[chrom]:, :]))
 
-        x_length = chromosome_bin_sums[22] - (chromosome_bin_sums[22] - chromosome_bins[22])  # index 22 -> chrX
+        x_length = chromosome_bin_sums[22] - (chromosome_bin_sums[22] - chromosome_bins[22])  #index 22 -> chrX
 
         if gender == "M":
             y_length = chromosome_bin_sums[23] - (chromosome_bin_sums[23] - chromosome_bins[23])

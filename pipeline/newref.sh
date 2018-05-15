@@ -14,7 +14,7 @@ for REF in ${REF_SIZES}
 do
     echo "Creating reference at bins size ${REF} kb"
 
-    wisecondorX newref ${INPUT_DIR}/*.npz \
+    WisecondorX newref ${INPUT_DIR}/*.npz \
     ${OUTPUT_DIR}/reference.${RELEASE}.${GENDER}.${REF}kb.npz \
     -binsize ${REF}000 -cpus ${CORES} -gender ${GENDER}
 done

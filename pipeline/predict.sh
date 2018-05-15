@@ -22,6 +22,6 @@ while read LINE; do
     NPZ=$(echo $LINE | awk -F ' ' '{print $2}')
 
     echo "Predicting sample ${SAMPLE}"
-    wisecondorX predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
+    WisecondorX predict ${NPZ} ${REF} ${OUTPUT_DIR}/${SAMPLE} ${OPT}
 
 done <${NPZ_FILES}

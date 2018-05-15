@@ -68,7 +68,7 @@ There are three main stages for using WisecondorX:
 
 ```bash
 
-wisecondorX convert input.bam output.npz [--optional arguments]
+WisecondorX convert input.bam output.npz [--optional arguments]
 ```
 
 <br>Optional argument<br><br> | Function
@@ -83,7 +83,7 @@ wisecondorX convert input.bam output.npz [--optional arguments]
 
 ```bash
 
-wisecondorX newref reference_input_dir/*.npz reference_output.npz [--optional arguments]
+WisecondorX newref reference_input_dir/*.npz reference_output.npz [--optional arguments]
 ```
 
 <br>Optional argument<br><br> | Function
@@ -99,7 +99,7 @@ wisecondorX newref reference_input_dir/*.npz reference_output.npz [--optional ar
 
 ```bash
 
-wisecondorX gender input.npz [--optional arguments]
+WisecondorX gender input.npz [--optional arguments]
 ```
 
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function
@@ -110,7 +110,7 @@ wisecondorX gender input.npz [--optional arguments]
 
 ```bash
 
-wisecondorX predict test_input.npz reference_input.npz output_id [--optional arguments]
+WisecondorX predict test_input.npz reference_input.npz output_id [--optional arguments]
 ```
   
 <br>Optional argument &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Function  
